@@ -4,7 +4,7 @@ import App from "./App.jsx";
 import RiderApp from "./components/Rider/RiderApp.jsx";
 import "./index.css";
 
-const path = window.location.pathname;
+const path = window.location.pathname.replace(/^\/hokada/, "") || "/";
 
 const RootApp = path.startsWith("/rider") ? RiderApp : App;
 
