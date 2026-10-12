@@ -885,7 +885,34 @@ function App() {
     setPage("home");
   }
 
-  function cancelBooking() {
+  async function cancelBooking() {
+    if (!supabase || !currentBooking?.id) {
+      alert("Unable to cancel this delivery. Please try again.");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("deliveries")
+      .update({ status: "cancelled" })
+      .eq("id", currentBooking.id)
+      .is("rider_id", null)
+      .in("status", ["searching", "pending"])
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      console.error("Could not cancel delivery:", error);
+      alert("Could not cancel this delivery. Please try again.");
+      return;
+    }
+
+    if (!data) {
+      alert(
+        "This delivery may already be assigned to a rider or may already be cancelled. Please refresh and check its status."
+      );
+      return;
+    }
+
     setCurrentBooking(null);
     setAssignedRider(null);
     setIsMatching(false);
