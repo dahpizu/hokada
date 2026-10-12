@@ -344,11 +344,17 @@ export default function RiderApp() {
 
       /*
        * Find an unassigned delivery.
+       *
+       * Only show paid deliveries that are still available.
+       * Cancelled, unpaid, and already assigned deliveries
+       * must not enter the rider's available queue.
        */
 
       const available = (data || []).find(
         (delivery) =>
-          !delivery.rider_id && AVAILABLE_STATUSES.includes(delivery.status)
+          !delivery.rider_id &&
+          AVAILABLE_STATUSES.includes(delivery.status) &&
+          delivery.payment_status === "paid"
       );
 
       setAvailableDelivery((previous) => {
@@ -469,9 +475,13 @@ export default function RiderApp() {
       const riderName = riderProfileRef.current?.full_name || RIDER.name;
 
       /*
-       * Claim only if the delivery is still unassigned
-       * and available. This prevents two riders claiming
-       * the same delivery.
+       * Claim only if the delivery is still:
+       * - unassigned
+       * - in an available status
+       * - confirmed paid
+       *
+       * This prevents a rider from claiming an unpaid order
+       * or two riders claiming the same delivery.
        */
       const { data, error } = await supabase
         .from("deliveries")
@@ -484,6 +494,7 @@ export default function RiderApp() {
         .eq("id", availableDelivery.id)
         .is("rider_id", null)
         .in("status", AVAILABLE_STATUSES)
+        .eq("payment_status", "paid")
         .select()
         .maybeSingle();
 
@@ -496,7 +507,7 @@ export default function RiderApp() {
 
       if (!data) {
         setMessage(
-          "This delivery is no longer available. Refresh to see the latest requests."
+          "This delivery is no longer available or payment has not been confirmed. Refresh to see the latest requests."
         );
         await loadDelivery(false, riderId);
         return;
