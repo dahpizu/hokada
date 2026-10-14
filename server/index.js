@@ -368,7 +368,9 @@ app.post(
         metadata: {
           delivery_id: String(delivery.id),
         },
-        callback_url: `${callbackOrigin}/payment-callback`,
+        callback_url:
+          process.env.PAYSTACK_CALLBACK_URL ||
+          `${callbackOrigin}/hokada/payment-callback`,
       });
 
       return res.json({
