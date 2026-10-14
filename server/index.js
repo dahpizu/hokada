@@ -86,6 +86,9 @@ app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
     service: "HOKADA payments",
+    supabaseUrlConfigured: Boolean(SUPABASE_URL),
+    serviceRoleKeyConfigured: Boolean(SUPABASE_SERVICE_ROLE_KEY),
+    publishableKeyConfigured: Boolean(SUPABASE_PUBLISHABLE_KEY),
     supabaseConfigured: Boolean(supabase && authClient),
     paystackConfigured: Boolean(PAYSTACK_SECRET_KEY),
   });
