@@ -388,6 +388,7 @@ function App() {
   });
 
   const [currentBooking, setCurrentBooking] = useState(null);
+  const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
   const [isMatching, setIsMatching] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
@@ -1096,6 +1097,21 @@ function App() {
             deliveries={deliveries}
             onBack={goHome}
             onBook={openBooking}
+            onSelectDelivery={(delivery) => {
+              setSelectedDelivery(delivery);
+              setPage("delivery-details");
+            }}
+          />
+        )}
+
+        {page === "delivery-details" && selectedDelivery && (
+          <DeliveryDetailsPage
+            delivery={selectedDelivery}
+            onBack={() => setPage("deliveries")}
+            onTrack={() => {
+              setCurrentBooking(selectedDelivery);
+              setPage("tracking");
+            }}
           />
         )}
 
@@ -2082,7 +2098,7 @@ function TrackingPage({
  * =========================================================
  */
 
-function DeliveriesPage({ deliveries, onBack, onBook }) {
+function DeliveriesPage({ deliveries, onBack, onBook, onSelectDelivery }) {
   return (
     <div className="page">
       <PageHeader
@@ -2109,7 +2125,19 @@ function DeliveriesPage({ deliveries, onBack, onBook }) {
       ) : (
         <div className="booking-list">
           {deliveries.map((delivery) => (
-            <div className="delivery-item" key={delivery.id}>
+            <div
+              className="delivery-item"
+              key={delivery.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelectDelivery(delivery)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectDelivery(delivery);
+                }
+              }}
+            >
               <div className="delivery-icon">
                 <Package size={21} />
               </div>
@@ -2160,6 +2188,57 @@ function DeliveriesPage({ deliveries, onBack, onBook }) {
           <Bike size={18} />
         </button>
       )}
+    </div>
+  );
+}
+
+function DeliveryDetailsPage({ delivery, onBack, onTrack }) {
+  const status = String(delivery.status || "searching")
+    .replaceAll("_", " ")
+    .replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+
+  const price =
+    delivery.deliveryFee ?? delivery.pricing?.total ?? delivery.rider_earnings ?? 0;
+
+  return (
+    <div className="page">
+      <PageHeader
+        title="Delivery details"
+        subtitle="Review your delivery information."
+        onBack={onBack}
+      />
+
+      <div className="empty-card">
+        <div className="empty-icon">
+          <Package size={30} />
+        </div>
+
+        <h3>{delivery.pickup}</h3>
+        <p>To: {delivery.dropoff}</p>
+
+        <hr />
+
+        <p><strong>Status:</strong> {status}</p>
+        <p><strong>Delivery type:</strong> {delivery.deliveryType || "Standard"}</p>
+        <p><strong>Package size:</strong> {delivery.packageSize || "Small"}</p>
+        <p><strong>Delivery fee:</strong> {formatNaira(price)}</p>
+        <p><strong>Payment:</strong> {delivery.paymentStatus || "Not confirmed"}</p>
+
+        <button
+          className="primary-button full-width"
+          onClick={onTrack}
+        >
+          <MapPin size={18} />
+          Track delivery
+        </button>
+
+        <button
+          className="secondary-button full-width"
+          onClick={onBack}
+        >
+          Back to deliveries
+        </button>
+      </div>
     </div>
   );
 }
