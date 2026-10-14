@@ -296,7 +296,16 @@ export default function RiderApp() {
 
         return;
       }
-
+      console.log("HOKADA rider diagnostic:", {
+        riderId: currentRiderId,
+        deliveryCount: data?.length ?? 0,
+        deliveries: (data || []).map((delivery) => ({
+          id: delivery.id,
+          status: delivery.status,
+          payment_status: delivery.payment_status,
+          rider_id: delivery.rider_id,
+        })),
+      });
       /*
        * Find a delivery already assigned to this rider.
        */
@@ -350,11 +359,28 @@ export default function RiderApp() {
        * must not enter the rider's available queue.
        */
 
+      const { data: declinedRows, error: declinedError } = await supabase
+        .from("rider_declined_deliveries")
+        .select("delivery_id")
+        .eq("rider_id", currentRiderId);
+
+      if (declinedError) {
+        console.error("Could not load declined requests:", declinedError);
+        setMessage(declinedError.message);
+        if (showLoading) setLoading(false);
+        return;
+      }
+
+      const declinedIds = new Set(
+        (declinedRows || []).map((row) => row.delivery_id)
+      );
+
       const available = (data || []).find(
         (delivery) =>
           !delivery.rider_id &&
           AVAILABLE_STATUSES.includes(delivery.status) &&
-          delivery.payment_status === "paid"
+          delivery.payment_status === "unpaid" &&
+          !declinedIds.has(delivery.id)
       );
 
       setAvailableDelivery((previous) => {
@@ -422,6 +448,24 @@ export default function RiderApp() {
 
           if (!updatedDelivery?.id) return;
 
+          if (
+            payload.eventType === "UPDATE" &&
+            updatedDelivery.status === "cancelled"
+          ) {
+            setActiveDelivery((previous) =>
+              previous?.id === updatedDelivery.id ? null : previous
+            );
+
+            setAvailableDelivery((previous) =>
+              previous?.id === updatedDelivery.id ? null : previous
+            );
+
+            setMessage("This delivery has been cancelled.");
+
+            void loadDelivery(false, riderId);
+            return;
+          }
+
           /*
            * Payment confirmation can happen without a status change.
            * Check payment_status as well as status.
@@ -474,15 +518,6 @@ export default function RiderApp() {
       const riderId = session.user.id;
       const riderName = riderProfileRef.current?.full_name || RIDER.name;
 
-      /*
-       * Claim only if the delivery is still:
-       * - unassigned
-       * - in an available status
-       * - confirmed paid
-       *
-       * This prevents a rider from claiming an unpaid order
-       * or two riders claiming the same delivery.
-       */
       const { data, error } = await supabase
         .from("deliveries")
         .update({
@@ -494,7 +529,7 @@ export default function RiderApp() {
         .eq("id", availableDelivery.id)
         .is("rider_id", null)
         .in("status", AVAILABLE_STATUSES)
-        .eq("payment_status", "paid")
+        .eq("payment_status", "unpaid")
         .select()
         .maybeSingle();
 
@@ -507,7 +542,7 @@ export default function RiderApp() {
 
       if (!data) {
         setMessage(
-          "This delivery is no longer available or payment has not been confirmed. Refresh to see the latest requests."
+          "This delivery is no longer available or its payment status has changed. Refresh to see the latest requests."
         );
         await loadDelivery(false, riderId);
         return;
@@ -1433,10 +1468,48 @@ export default function RiderApp() {
             <div className="rider-job-actions">
               <button
                 className="rider-decline-button"
-                onClick={() => setAvailableDelivery(null)}
+                onClick={async () => {
+                  if (!availableDelivery?.id || !session?.user?.id) return;
+
+                  const confirmed = window.confirm(
+                    "Decline this delivery request?"
+                  );
+
+                  if (!confirmed) return;
+
+                  const declinedId = availableDelivery.id;
+                  const riderId = session.user.id;
+
+                  setActionLoading(true);
+
+                  try {
+                    const { error } = await supabase
+                      .from("rider_declined_deliveries")
+                      .upsert(
+                        {
+                          rider_id: riderId,
+                          delivery_id: declinedId,
+                        },
+                        {
+                          onConflict: "rider_id,delivery_id",
+                          ignoreDuplicates: true,
+                        }
+                      );
+
+                    if (error) throw error;
+
+                    setAvailableDelivery(null);
+                    setMessage("Delivery request declined.");
+                    await loadDelivery(false, riderId);
+                  } catch (error) {
+                    console.error("Could not decline delivery:", error);
+                    setMessage(`Could not decline request: ${error.message}`);
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
                 disabled={actionLoading}
               >
-                <XCircle size={18} />
                 Decline
               </button>
 
