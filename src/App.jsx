@@ -552,6 +552,19 @@ function App() {
             )
           );
 
+          setSelectedDelivery((previous) =>
+            previous?.id === updatedDelivery.id
+              ? {
+                  ...previous,
+                  status: updatedDelivery.status,
+                  paymentStatus: updatedDelivery.payment_status,
+                  payment_status: updatedDelivery.payment_status,
+                  riderName: updatedDelivery.rider_name,
+                  deliveryFee: updatedDelivery.delivery_fee,
+                }
+              : previous
+          );
+
           if (
             [
               "accepted",
@@ -1108,6 +1121,8 @@ function App() {
           <DeliveryDetailsPage
             delivery={selectedDelivery}
             onBack={() => setPage("deliveries")}
+            onPay={() => payForDelivery(selectedDelivery.id)}
+            isPaying={isPaying}
             onTrack={() => {
               setCurrentBooking(selectedDelivery);
               setPage("tracking");
@@ -2185,7 +2200,7 @@ function DeliveriesPage({ deliveries, onBack, onBook, onSelectDelivery }) {
   );
 }
 
-function DeliveryDetailsPage({ delivery, onBack, onTrack }) {
+function DeliveryDetailsPage({ delivery, onBack, onTrack, onPay, isPaying }) {
   const status = String(delivery.status || "searching")
     .replaceAll("_", " ")
     .replace(/\\b\\w/g, (letter) => letter.toUpperCase());
@@ -2215,7 +2230,22 @@ function DeliveryDetailsPage({ delivery, onBack, onTrack }) {
         <p><strong>Delivery type:</strong> {delivery.deliveryType || "Standard"}</p>
         <p><strong>Package size:</strong> {delivery.packageSize || "Small"}</p>
         <p><strong>Delivery fee:</strong> {formatNaira(price)}</p>
-        <p><strong>Payment:</strong> {delivery.paymentStatus || "Not confirmed"}</p>
+        <p><strong>Payment:</strong> {
+          (delivery.paymentStatus || delivery.payment_status || "Not confirmed")
+            .toString()
+            .replaceAll("_", " ")
+        }</p>
+
+                {(delivery.paymentStatus || delivery.payment_status) !== "paid" &&
+          ["arrived_at_dropoff", "delivered"].includes(delivery.status) && (
+            <button
+              className="primary-button full-width"
+              onClick={onPay}
+              disabled={isPaying}
+            >
+              {isPaying ? "Opening secure checkout..." : "Pay Now"}
+            </button>
+          )}
 
         <button
           className="primary-button full-width"
