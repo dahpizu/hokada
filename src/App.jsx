@@ -2125,18 +2125,11 @@ function DeliveriesPage({ deliveries, onBack, onBook, onSelectDelivery }) {
       ) : (
         <div className="booking-list">
           {deliveries.map((delivery) => (
-            <div
+            <button
+              type="button"
               className="delivery-item"
               key={delivery.id}
-              role="button"
-              tabIndex={0}
               onClick={() => onSelectDelivery(delivery)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onSelectDelivery(delivery);
-                }
-              }}
             >
               <div className="delivery-icon">
                 <Package size={21} />
@@ -2174,7 +2167,7 @@ function DeliveriesPage({ deliveries, onBack, onBook, onSelectDelivery }) {
                     : delivery.status}
                 </span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
