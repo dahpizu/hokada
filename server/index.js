@@ -10,6 +10,20 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4242;
 const PAYSTACK_SECRET_KEY = (process.env.PAYSTACK_SECRET_KEY || "").trim();
+console.log(
+  "Paystack key diagnostic:",
+  JSON.stringify({
+    configured: Boolean(PAYSTACK_SECRET_KEY),
+    length: PAYSTACK_SECRET_KEY?.length ?? 0,
+    fingerprint: PAYSTACK_SECRET_KEY
+      ? crypto
+          .createHash("sha256")
+          .update(PAYSTACK_SECRET_KEY)
+          .digest("hex")
+          .slice(0, 12)
+      : "missing",
+  })
+);
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_PUBLISHABLE_KEY =
