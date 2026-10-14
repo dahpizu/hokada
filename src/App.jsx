@@ -369,7 +369,7 @@ function PaymentCallback({ onVerified, onReturnHome }) {
 
 function App() {
   const [page, setPage] = useState(() =>
-    window.location.pathname === "/payment-callback"
+    window.location.pathname === "/hokada/payment-callback"
       ? "payment-callback"
       : "home"
   );
@@ -886,37 +886,68 @@ function App() {
   }
 
   async function cancelBooking() {
-    if (!supabase || !currentBooking?.id) {
+    if (!supabase || !customerUser?.id || !currentBooking?.id) {
       alert("Unable to cancel this delivery. Please try again.");
       return;
     }
 
-    const { data, error } = await supabase
-      .from("deliveries")
-      .update({ status: "cancelled" })
-      .eq("id", currentBooking.id)
-      .is("rider_id", null)
-      .in("status", ["searching", "pending"])
-      .select("id")
-      .maybeSingle();
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this delivery? This is only allowed while payment is unpaid."
+    );
 
-    if (error) {
-      console.error("Could not cancel delivery:", error);
-      alert("Could not cancel this delivery. Please try again.");
-      return;
-    }
+    if (!confirmed) return;
 
-    if (!data) {
-      alert(
-        "This delivery may already be assigned to a rider or may already be cancelled. Please refresh and check its status."
+    const cancellableStatuses = [
+      "searching",
+      "pending",
+      "accepted",
+      "in_transit",
+      "arrived",
+      "collected",
+      "going_to_dropoff",
+      "arrived_at_dropoff",
+    ];
+
+    try {
+      const { data, error } = await supabase
+        .from("deliveries")
+        .update({
+          status: "cancelled",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", currentBooking.id)
+        .eq("customer_id", customerUser.id)
+        .eq("payment_status", "unpaid")
+        .in("status", cancellableStatuses)
+        .select("id, status")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        alert(
+          "Cancellation was not accepted. The delivery may be paid, completed, or restricted by database permissions. Please refresh and check the status."
+        );
+        return;
+      }
+
+      setDeliveries((previous) =>
+        previous.map((item) =>
+          item.id === data.id
+            ? { ...item, status: "cancelled", paymentStatus: "unpaid" }
+            : item
+        )
       );
-      return;
-    }
 
-    setCurrentBooking(null);
-    setAssignedRider(null);
-    setIsMatching(false);
-    setPage("home");
+      setCurrentBooking(null);
+      setAssignedRider(null);
+      setIsMatching(false);
+      setIsPaying(false);
+      setPage("home");
+    } catch (error) {
+      console.error("Could not cancel delivery:", error);
+      alert(`Could not cancel delivery: ${error.message}`);
+    }
   }
 
   /*
@@ -959,7 +990,7 @@ function App() {
           setCustomerUser(user);
 
           setPage(
-            window.location.pathname === "/payment-callback"
+            window.location.pathname === "/hokada/payment-callback"
               ? "payment-callback"
               : "home"
           );
@@ -1055,6 +1086,7 @@ function App() {
             onViewDeliveries={() => setPage("deliveries")}
             onBackHome={goHome}
             onPayDelivery={payForDelivery}
+            onCancel={cancelBooking}
             isPaying={isPaying}
           />
         )}
@@ -2035,6 +2067,13 @@ function TrackingPage({
       </div>
     </div>
   );
+  {
+    status !== "delivered" && !paymentIsPaid && (
+      <button className="secondary-button" onClick={onCancel}>
+        Cancel delivery
+      </button>
+    );
+  }
 }
 
 /*
