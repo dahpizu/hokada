@@ -5,8 +5,11 @@ import RiderApp from "./components/Rider/RiderApp.jsx";
 import "./index.css";
 
 const path = window.location.pathname.replace(/^\/hokada/, "") || "/";
+const params = new URLSearchParams(window.location.search);
 
-const RootApp = path.startsWith("/rider") ? RiderApp : App;
+const isRiderApp = path.startsWith("/rider") || params.get("app") === "rider";
+
+const RootApp = isRiderApp ? RiderApp : App;
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
