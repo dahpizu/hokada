@@ -227,13 +227,13 @@ function verifyPaystackReference(reference) {
       `/api/payments/verify/${encodeURIComponent(reference)}`
     );
 
-    if (!result.verified || !result.delivery?.id) {
+    if (!result.success || !result.deliveryId) {
       throw new Error(result.error || "Your payment could not be confirmed.");
     }
 
     return {
       success: true,
-      deliveryId: result.delivery.id,
+      deliveryId: result.deliveryId,
     };
   })();
 
@@ -2206,7 +2206,10 @@ function DeliveryDetailsPage({ delivery, onBack, onTrack, onPay, isPaying }) {
     .replace(/\\b\\w/g, (letter) => letter.toUpperCase());
 
   const price =
-    delivery.deliveryFee ?? delivery.pricing?.total ?? delivery.rider_earnings ?? 0;
+    delivery.deliveryFee ??
+    delivery.pricing?.total ??
+    delivery.rider_earnings ??
+    0;
 
   return (
     <div className="page">
@@ -2226,17 +2229,30 @@ function DeliveryDetailsPage({ delivery, onBack, onTrack, onPay, isPaying }) {
 
         <hr />
 
-        <p><strong>Status:</strong> {status}</p>
-        <p><strong>Delivery type:</strong> {delivery.deliveryType || "Standard"}</p>
-        <p><strong>Package size:</strong> {delivery.packageSize || "Small"}</p>
-        <p><strong>Delivery fee:</strong> {formatNaira(price)}</p>
-        <p><strong>Payment:</strong> {
-          (delivery.paymentStatus || delivery.payment_status || "Not confirmed")
+        <p>
+          <strong>Status:</strong> {status}
+        </p>
+        <p>
+          <strong>Delivery type:</strong> {delivery.deliveryType || "Standard"}
+        </p>
+        <p>
+          <strong>Package size:</strong> {delivery.packageSize || "Small"}
+        </p>
+        <p>
+          <strong>Delivery fee:</strong> {formatNaira(price)}
+        </p>
+        <p>
+          <strong>Payment:</strong>{" "}
+          {(
+            delivery.paymentStatus ||
+            delivery.payment_status ||
+            "Not confirmed"
+          )
             .toString()
-            .replaceAll("_", " ")
-        }</p>
+            .replaceAll("_", " ")}
+        </p>
 
-                {(delivery.paymentStatus || delivery.payment_status) !== "paid" &&
+        {(delivery.paymentStatus || delivery.payment_status) !== "paid" &&
           ["arrived_at_dropoff", "delivered"].includes(delivery.status) && (
             <button
               className="primary-button full-width"
@@ -2247,18 +2263,12 @@ function DeliveryDetailsPage({ delivery, onBack, onTrack, onPay, isPaying }) {
             </button>
           )}
 
-        <button
-          className="primary-button full-width"
-          onClick={onTrack}
-        >
+        <button className="primary-button full-width" onClick={onTrack}>
           <MapPin size={18} />
           Track delivery
         </button>
 
-        <button
-          className="secondary-button full-width"
-          onClick={onBack}
-        >
+        <button className="secondary-button full-width" onClick={onBack}>
           Back to deliveries
         </button>
       </div>
