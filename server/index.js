@@ -127,12 +127,49 @@ async function paystackRequest(path, body) {
   return result.data;
 }
 
+// Return true only for Paystack's explicit "reference not found" response.
+// Network errors, authentication errors, and ambiguous responses throw.
+async function paystackReferenceDefinitelyMissing(reference) {
+  const response = await fetch(
+    `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+      },
+    }
+  );
+
+  let result;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error("Could not safely verify the existing Paystack reference.");
+  }
+
+  if (
+    response.status === 404 &&
+    result.status === false &&
+    /transaction reference not found/i.test(result.message || "")
+  ) {
+    return true;
+  }
+
+  if (response.ok && result.status === true && result.data) {
+    return false;
+  }
+
+  throw new Error(
+    "Paystack could not conclusively verify the existing payment reference."
+  );
+}
+
 // Read the delivery fee from Supabase, never from the browser.
 async function getDelivery(deliveryId) {
   const { data, error } = await supabase
     .from("deliveries")
     .select(
-      "id, customer_id, delivery_fee, payment_status, payment_provider, payment_reference, payment_amount_kobo"
+      "id, customer_id, delivery_fee, payment_status, payment_provider, payment_reference, payment_amount_kobo, paid_at"
     )
     .eq("id", deliveryId)
     .maybeSingle();
@@ -325,11 +362,69 @@ app.post(
         });
       }
 
-      // Do not replace an existing pending reference.
+      // Recover a stale reservation only when Paystack explicitly
+      // confirms that its reference does not exist.
+      if (delivery.payment_status === "pending") {
+        if (
+          delivery.payment_provider !== "paystack" ||
+          !delivery.payment_reference ||
+          delivery.paid_at
+        ) {
+          return res.status(409).json({
+            error: "This payment needs verification before retrying.",
+          });
+        }
+
+        const referenceMissing =
+          await paystackReferenceDefinitelyMissing(
+            delivery.payment_reference
+          );
+
+        if (!referenceMissing) {
+          return res.status(409).json({
+            error:
+              "A payment is already pending for this delivery. Check your delivery history or contact support before retrying.",
+          });
+        }
+
+        const oldReference = delivery.payment_reference;
+        const oldAmount = delivery.payment_amount_kobo;
+
+        const { data: released, error: releaseError } = await supabase
+          .from("deliveries")
+          .update({
+            payment_status: "unpaid",
+            payment_provider: null,
+            payment_reference: null,
+            payment_amount_kobo: null,
+          })
+          .eq("id", delivery.id)
+          .eq("customer_id", req.customer.id)
+          .eq("payment_status", "pending")
+          .eq("payment_provider", "paystack")
+          .eq("payment_reference", oldReference)
+          .eq("payment_amount_kobo", oldAmount)
+          .is("paid_at", null)
+          .select("id")
+          .maybeSingle();
+
+        if (releaseError) throw releaseError;
+
+        if (!released) {
+          return res.status(409).json({
+            error:
+              "The payment changed while being checked. Refresh your delivery and try again.",
+          });
+        }
+
+        // Continue through the normal flow below to create a fresh
+        // reference and initialize a new Paystack checkout.
+        delivery.payment_status = "unpaid";
+      }
+
       if (delivery.payment_status !== "unpaid") {
         return res.status(409).json({
-          error:
-            "A payment is already pending for this delivery. Check your delivery history or contact support before retrying.",
+          error: "This delivery cannot be paid in its current state.",
         });
       }
 
