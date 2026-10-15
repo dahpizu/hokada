@@ -148,9 +148,11 @@ async function paystackReferenceDefinitelyMissing(reference) {
   }
 
   if (
-    response.status === 404 &&
+    response.status === 400 &&
     result.status === false &&
-    /transaction reference not found/i.test(result.message || "")
+    /^transaction reference not found\.?$/i.test(
+      String(result.message || "").trim()
+    )
   ) {
     return true;
   }
