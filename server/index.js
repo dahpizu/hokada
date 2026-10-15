@@ -160,7 +160,9 @@ async function paystackReferenceDefinitelyMissing(reference) {
   }
 
   throw new Error(
-    "Paystack could not conclusively verify the existing payment reference."
+    `Paystack reference check inconclusive (HTTP ${response.status}): ${
+      String(result.message || "No response message").slice(0, 180)
+    }`
   );
 }
 
