@@ -360,9 +360,9 @@ export default function RiderApp() {
       /*
        * Find an unassigned delivery.
        *
-       * Only show paid deliveries that are still available.
-       * Cancelled, unpaid, and already assigned deliveries
-       * must not enter the rider's available queue.
+       * Show eligible unassigned deliveries regardless of payment status.
+       * Payment is collected at drop-off and verified by the backend.
+       * Cancelled and already assigned deliveries are not available.
        */
 
       const { data: declinedRows, error: declinedError } = await supabase
@@ -385,7 +385,6 @@ export default function RiderApp() {
         (delivery) =>
           !delivery.rider_id &&
           AVAILABLE_STATUSES.includes(delivery.status) &&
-          delivery.payment_status === "paid" &&
           !declinedIds.has(delivery.id)
       );
 
@@ -540,7 +539,6 @@ export default function RiderApp() {
         .eq("id", availableDelivery.id)
         .is("rider_id", null)
         .in("status", AVAILABLE_STATUSES)
-        .eq("payment_status", "paid")
         .select()
         .maybeSingle();
 
