@@ -662,45 +662,8 @@ export default function RiderApp() {
       setAvailableDelivery(null);
       setMessage("Payment confirmed. Delivery completed successfully.");
 
-      /*
-       * Update the rider profile totals.
-       *
-       * For production, use a database transaction or backend
-       * function for both completion and earnings accounting.
-       */
-      const currentDeliveries = Number(
-        riderProfileRef.current?.total_deliveries || 0
-      );
-
-      const currentEarnings = Number(
-        riderProfileRef.current?.total_earnings || 0
-      );
-
-      const updatedProfile = {
-        ...(riderProfileRef.current || {}),
-        total_deliveries: currentDeliveries + 1,
-        total_earnings: currentEarnings + riderEarnings,
-      };
-
-      const { error: profileError } = await supabase
-        .from("rider_profiles")
-        .update({
-          total_deliveries: updatedProfile.total_deliveries,
-          total_earnings: updatedProfile.total_earnings,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", riderId);
-
-      if (profileError) {
-        console.error("Could not update rider earnings:", profileError);
-        setMessage(
-          "Delivery completed, but rider totals could not be updated. Please refresh."
-        );
-      } else {
-        setRiderProfile(updatedProfile);
-        riderProfileRef.current = updatedProfile;
-      }
-
+      // Refresh history and today's statistics from the database.
+      // Delivery earnings are calculated securely by the database.
       await Promise.all([
         loadDeliveryHistory(riderId),
         loadTodayStats(riderId),
