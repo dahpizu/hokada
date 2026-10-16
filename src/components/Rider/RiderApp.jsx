@@ -97,7 +97,13 @@ export default function RiderApp() {
 
       setRiderProfile(data);
       riderProfileRef.current = data;
-      setIsOnline(Boolean(data?.is_online));
+
+      const approved = data?.approval_status === "approved";
+      setIsOnline(approved && Boolean(data?.is_online));
+
+      if (!approved) {
+        setMessage("Your rider account is awaiting approval.");
+      }
 
       return data;
     } catch (error) {
@@ -379,7 +385,7 @@ export default function RiderApp() {
         (delivery) =>
           !delivery.rider_id &&
           AVAILABLE_STATUSES.includes(delivery.status) &&
-          delivery.payment_status === "unpaid" &&
+          delivery.payment_status === "paid" &&
           !declinedIds.has(delivery.id)
       );
 
@@ -511,6 +517,11 @@ export default function RiderApp() {
       return;
     }
 
+    if (riderProfileRef.current?.approval_status !== "approved") {
+      setMessage("Your rider account must be approved before accepting deliveries.");
+      return;
+    }
+
     try {
       setActionLoading(true);
       setMessage("");
@@ -529,7 +540,7 @@ export default function RiderApp() {
         .eq("id", availableDelivery.id)
         .is("rider_id", null)
         .in("status", AVAILABLE_STATUSES)
-        .eq("payment_status", "unpaid")
+        .eq("payment_status", "paid")
         .select()
         .maybeSingle();
 
@@ -622,24 +633,17 @@ export default function RiderApp() {
       if (latest.status !== "arrived_at_dropoff") return;
 
       /*
-       * Rider receives 80% of the delivery fee.
-       */
-      const riderEarnings = Math.round(Number(latest.delivery_fee || 0) * 0.8);
-
-      /*
        * Conditional update:
        * - assigned to this rider
        * - still at drop-off
        * - payment is confirmed
        *
-       * This prevents this function from completing an
-       * unpaid delivery or overwriting a different status.
+       * Supabase will calculate rider earnings securely.
        */
       const { data: completed, error: completeError } = await supabase
         .from("deliveries")
         .update({
           status: "delivered",
-          rider_earnings: riderEarnings,
           updated_at: new Date().toISOString(),
         })
         .eq("id", deliveryId)
@@ -742,22 +746,10 @@ export default function RiderApp() {
 
       const riderId = session.user.id;
 
-      let riderEarnings = Number(activeDelivery.rider_earnings || 0);
-
-      if (status === "delivered") {
-        riderEarnings = Math.round(
-          Number(activeDelivery.delivery_fee || 0) * 0.8
-        );
-      }
-
       const updatePayload = {
         status,
         updated_at: new Date().toISOString(),
       };
-
-      if (status === "delivered") {
-        updatePayload.rider_earnings = riderEarnings;
-      }
 
       let updateQuery = supabase
         .from("deliveries")
@@ -817,6 +809,15 @@ export default function RiderApp() {
 
   async function updateOnlineStatus(nextStatus) {
     if (!supabase || !session?.user?.id) return;
+
+    if (
+      nextStatus &&
+      riderProfileRef.current?.approval_status !== "approved"
+    ) {
+      setIsOnline(false);
+      setMessage("Your rider account must be approved before going online.");
+      return;
+    }
 
     const previousStatus = isOnline;
 
@@ -1407,6 +1408,7 @@ export default function RiderApp() {
 
             <RiderLocationBroadcaster
               deliveryId={activeDelivery.id}
+              riderId={riderProfile?.id}
               enabled={ACTIVE_STATUSES.includes(activeDelivery.status)}
             />
 

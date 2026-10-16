@@ -4,6 +4,7 @@ import { Radio, ShieldCheck, Wifi, WifiOff } from "lucide-react";
 
 export default function RiderLocationBroadcaster({
   deliveryId,
+  riderId,
   enabled = true,
 }) {
   const channelRef = useRef(null);
@@ -14,7 +15,7 @@ export default function RiderLocationBroadcaster({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!deliveryId || !enabled) {
+    if (!deliveryId || !riderId || !enabled) {
       setStatus("waiting");
       setError("");
       return;
@@ -45,14 +46,16 @@ export default function RiderLocationBroadcaster({
           rider_accuracy: location.accuracy,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", deliveryId);
+        .eq("id", deliveryId)
+        .eq("rider_id", riderId);
 
       if (updateError) {
         console.error("Rider location update error:", updateError);
         setError(updateError.message);
-      } else {
-        console.log("HOKADA GPS saved:", location);
+        return;
       }
+
+      console.log("HOKADA GPS saved:", location);
 
       if (channelRef.current) {
         const { error: broadcastError } = await channelRef.current.send({
@@ -162,9 +165,9 @@ export default function RiderLocationBroadcaster({
         channelRef.current = null;
       }
     };
-  }, [deliveryId, enabled]);
+  }, [deliveryId, riderId, enabled]);
 
-  if (!deliveryId || !enabled) {
+  if (!deliveryId || !riderId || !enabled) {
     return null;
   }
 
