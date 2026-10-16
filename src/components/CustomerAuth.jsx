@@ -82,6 +82,9 @@ export default function CustomerAuth({ onAuthenticated }) {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+          },
         });
 
         if (error) {
