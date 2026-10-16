@@ -7,7 +7,6 @@ export default function RiderLocationBroadcaster({
   riderId,
   enabled = true,
 }) {
-  const channelRef = useRef(null);
   const watchIdRef = useRef(null);
 
   const [status, setStatus] = useState("waiting");
@@ -57,17 +56,6 @@ export default function RiderLocationBroadcaster({
 
       console.log("HOKADA GPS saved:", location);
 
-      if (channelRef.current) {
-        const { error: broadcastError } = await channelRef.current.send({
-          type: "broadcast",
-          event: "rider-location",
-          payload: location,
-        });
-
-        if (broadcastError) {
-          console.error("Rider location broadcast error:", broadcastError);
-        }
-      }
     };
 
     const startTracking = async () => {
@@ -79,27 +67,6 @@ export default function RiderLocationBroadcaster({
 
       setStatus("connecting");
       setError("");
-
-      const channel = supabase.channel(`delivery:${deliveryId}`);
-
-      channelRef.current = channel;
-
-      channel.subscribe((subscriptionStatus) => {
-        console.log("HOKADA GPS Realtime status:", subscriptionStatus);
-
-        if (!active) {
-          return;
-        }
-
-        if (subscriptionStatus === "SUBSCRIBED") {
-          console.log("HOKADA GPS Realtime connected.");
-        }
-
-        if (subscriptionStatus === "CHANNEL_ERROR") {
-          console.error("HOKADA GPS Realtime channel error.");
-          setError("Realtime connection failed.");
-        }
-      });
 
       console.log("Starting browser GPS watch...");
 
@@ -160,10 +127,6 @@ export default function RiderLocationBroadcaster({
         watchIdRef.current = null;
       }
 
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
     };
   }, [deliveryId, riderId, enabled]);
 

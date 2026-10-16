@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import TrackingMap from "./components/TrackingMap";
+import GoogleAddressInput from "./components/GoogleAddressInput";
+import AddressLocationSection from "./components/AddressLocationSection";
 import TrackingChat from "./components/TrackingChat";
 import CustomerAuth from "./components/CustomerAuth";
 import { supabase } from "./lib/supabase";
@@ -60,33 +61,68 @@ const PAYMENT_ELIGIBLE_STATUSES = ["arrived_at_dropoff", "delivered"];
  */
 
 async function geocodeAddress(address) {
-  const query = `${address}, Lagos, Nigeria`;
+  const isIkotunIgandoArea =
+    /ikotun|igando|idimu|egbe|isheri/i.test(address);
+
+  const params = new URLSearchParams({
+    q: `${address}, Lagos, Nigeria`,
+    limit: "1",
+    lang: "en",
+    lat: isIkotunIgandoArea ? "6.55" : "6.5244",
+    lon: isIkotunIgandoArea ? "3.27" : "3.3792",
+    dedupe: "1",
+  });
+
+  if (isIkotunIgandoArea) {
+    params.set("bbox", "3.18,6.45,3.36,6.68");
+    params.set("zoom", "13");
+  }
 
   const response = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ng&q=${encodeURIComponent(
-      query
-    )}`,
-    {
-      headers: {
-        Accept: "application/json",
-      },
-    }
+    `https://photon.komoot.io/api/?${params.toString()}`,
+    { headers: { Accept: "application/json" } }
   );
 
   if (!response.ok) {
-    throw new Error("Unable to find this location.");
+    throw new Error("Unable to search for this location. Please try again.");
   }
 
-  const results = await response.json();
+  const data = await response.json();
+  const feature = data.features?.[0];
+  const coordinates = feature?.geometry?.coordinates;
 
-  if (!results.length) {
-    throw new Error(`Location not found: ${address}`);
+  if (
+    !feature ||
+    !coordinates ||
+    !Number.isFinite(Number(coordinates[0])) ||
+    !Number.isFinite(Number(coordinates[1]))
+  ) {
+    throw new Error(
+      `Location not found: ${address}. Please try a more specific address.`
+    );
   }
+
+  const p = feature.properties || {};
+  const parts = [
+    p.name,
+    p.street,
+    p.district,
+    p.city || p.locality,
+    p.state,
+    p.country,
+  ].filter(Boolean);
+
+  const displayName = parts.filter(
+    (part, index) =>
+      parts.findIndex(
+        (other) => other.toLowerCase() === part.toLowerCase()
+      ) === index
+  ).join(", ");
 
   return {
-    lat: Number(results[0].lat),
-    lng: Number(results[0].lon),
-    displayName: results[0].display_name,
+    lat: Number(coordinates[1]),
+    lng: Number(coordinates[0]),
+    displayName: displayName || address,
   };
 }
 
@@ -228,7 +264,11 @@ function verifyPaystackReference(reference) {
     );
 
     if (!result.success || !result.deliveryId) {
-      throw new Error(result.error || "Your payment could not be confirmed.");
+      const error = new Error(
+        result.error || "Your payment could not be confirmed."
+      );
+      error.paymentStatus = result.status || "unverified";
+      throw error;
     }
 
     return {
@@ -259,6 +299,7 @@ function verifyPaystackReference(reference) {
 function PaymentCallback({ onVerified, onReturnHome }) {
   const [message, setMessage] = useState("Verifying your payment...");
   const [error, setError] = useState("");
+  const [isPending, setIsPending] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const hasCompleted = useRef(false);
 
@@ -283,6 +324,7 @@ function PaymentCallback({ onVerified, onReturnHome }) {
 
       try {
         setError("");
+        setIsPending(false);
         setMessage("Verifying your payment...");
 
         const payment = await verifyPaystackReference(reference);
@@ -303,6 +345,7 @@ function PaymentCallback({ onVerified, onReturnHome }) {
 
         console.error("Payment callback error:", err);
 
+        setIsPending(err?.paymentStatus === "pending");
         setError(
           err?.message || "Something went wrong verifying your payment."
         );
@@ -321,7 +364,9 @@ function PaymentCallback({ onVerified, onReturnHome }) {
   return (
     <main className="payment-callback">
       <div className="payment-callback-card">
-        {error ? (
+        {isPending ? (
+          <LoaderCircle size={54} color="#d97706" className="payment-spinner" />
+        ) : error ? (
           <XCircle size={54} color="#ef4444" />
         ) : message.startsWith("Payment confirmed") ? (
           <CheckCircle2 size={54} color="#16a34a" />
@@ -329,7 +374,13 @@ function PaymentCallback({ onVerified, onReturnHome }) {
           <LoaderCircle size={54} color="#16a34a" className="payment-spinner" />
         )}
 
-        <h1>{error ? "Payment verification failed" : "HOKADA Payment"}</h1>
+        <h1>
+          {isPending
+            ? "Payment still processing"
+            : error
+              ? "Payment verification failed"
+              : "HOKADA Payment"}
+        </h1>
 
         <p>{error || message}</p>
 
@@ -340,6 +391,7 @@ function PaymentCallback({ onVerified, onReturnHome }) {
               className="primary-button full-width"
               onClick={() => {
                 setError("");
+                setIsPending(false);
                 setMessage("Retrying payment verification...");
                 setRetryKey((value) => value + 1);
               }}
@@ -374,12 +426,18 @@ function App() {
       : "home"
   );
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [page]);
+
   const [customerUser, setCustomerUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const [booking, setBooking] = useState({
     pickup: "",
     dropoff: "",
+    pickupCoords: null,
+    dropoffCoords: null,
     recipientName: "",
     recipientPhone: "",
     packageSize: "Small",
@@ -453,7 +511,7 @@ function App() {
     async function loadCustomerDeliveries() {
       const { data, error } = await supabase
         .from("deliveries")
-        .select("*")
+        .select("id, pickup_address, dropoff_address, delivery_type, package_type, recipient_name, recipient_phone, notes, status, delivery_fee, payment_status, created_at, rider_name")
         .eq("customer_id", customerUser.id)
         .order("created_at", {
           ascending: false,
@@ -529,7 +587,13 @@ function App() {
             return {
               ...previous,
               status: updatedDelivery.status,
-              delivery: updatedDelivery,
+              delivery: {
+                id: updatedDelivery.id,
+                status: updatedDelivery.status,
+                payment_status: updatedDelivery.payment_status,
+                delivery_fee: updatedDelivery.delivery_fee,
+                rider_name: updatedDelivery.rider_name,
+              },
               rider: updatedRider || previous.rider || null,
             };
           });
@@ -595,10 +659,15 @@ function App() {
    */
 
   function updateBooking(field, value) {
-    setBooking((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
+    setBooking((previous) => {
+      const next = { ...previous, [field]: value };
+
+      // Typing a new address invalidates its previously selected coordinates.
+      if (field === "pickup") next.pickupCoords = null;
+      if (field === "dropoff") next.dropoffCoords = null;
+
+      return next;
+    });
   }
 
   function goHome() {
@@ -647,58 +716,29 @@ function App() {
       setAssignedRider(null);
       setIsMatching(false);
 
-      const pickupCoords = await geocodeAddress(booking.pickup.trim());
-      const dropoffCoords = await geocodeAddress(booking.dropoff.trim());
+      const pickupCoords = booking.pickupCoords || await geocodeAddress(booking.pickup.trim());
+      const dropoffCoords = booking.dropoffCoords || await geocodeAddress(booking.dropoff.trim());
 
-      const deliveryPayload = {
-        customer_id: customerUser.id,
-        customer_name:
-          customerUser.user_metadata?.full_name || "HOKADA Customer",
+      const { delivery } = await paymentApiRequest("/api/deliveries", {
+        method: "POST",
+        body: JSON.stringify({
+          pickup_address: booking.pickup.trim(),
+          dropoff_address: booking.dropoff.trim(),
 
-        rider_name: null,
-        rider_id: null,
+          pickup_lat: pickupCoords.lat,
+          pickup_lng: pickupCoords.lng,
+          dropoff_lat: dropoffCoords.lat,
+          dropoff_lng: dropoffCoords.lng,
 
-        pickup_address: booking.pickup.trim(),
-        dropoff_address: booking.dropoff.trim(),
+          recipient_name: booking.recipientName.trim(),
+          recipient_phone: booking.recipientPhone.trim(),
 
-        pickup_lat: pickupCoords.lat,
-        pickup_lng: pickupCoords.lng,
-        dropoff_lat: dropoffCoords.lat,
-        dropoff_lng: dropoffCoords.lng,
-
-        rider_lat: null,
-        rider_lng: null,
-        rider_heading: null,
-        rider_speed: null,
-        rider_accuracy: null,
-
-        recipient_name: booking.recipientName.trim(),
-        recipient_phone: booking.recipientPhone.trim(),
-
-        package_type: booking.packageSize,
-        package_description: `${booking.packageSize} package`,
-        delivery_type: booking.deliveryType,
-        notes: booking.notes.trim() || null,
-
-        delivery_fee: pricing.total,
-        rider_earnings: 0,
-
-        status: "searching",
-        payment_status: "unpaid",
-        payment_provider: null,
-        payment_reference: null,
-        paid_at: null,
-      };
-
-      const { data: delivery, error: insertError } = await supabase
-        .from("deliveries")
-        .insert(deliveryPayload)
-        .select()
-        .single();
-
-      if (insertError) {
-        throw new Error(`Could not create delivery: ${insertError.message}`);
-      }
+          package_type: booking.packageSize,
+          package_description: `${booking.packageSize} package`,
+          delivery_type: booking.deliveryType,
+          notes: booking.notes.trim() || null,
+        }),
+      });
 
       const newBooking = {
         id: delivery.id,
@@ -707,9 +747,11 @@ function App() {
         status: "searching",
         createdAt: delivery.created_at,
         delivery: {
-          ...delivery,
+          id: delivery.id,
           status: "searching",
           payment_status: "unpaid",
+          delivery_fee: delivery.delivery_fee,
+          rider_name: delivery.rider_name ?? null,
         },
         rider: null,
       };
@@ -820,7 +862,7 @@ function App() {
 
       const { data: delivery, error } = await supabase
         .from("deliveries")
-        .select("*")
+        .select("id, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, created_at, delivery_fee, payment_status, rider_name")
         .eq("id", deliveryId)
         .eq("customer_id", customerUser.id)
         .single();
@@ -859,7 +901,13 @@ function App() {
         pricing: restoredPricing,
         status: delivery.status,
         createdAt: delivery.created_at,
-        delivery,
+        delivery: {
+          id: delivery.id,
+          status: delivery.status,
+          payment_status: delivery.payment_status,
+          delivery_fee: delivery.delivery_fee,
+          rider_name: delivery.rider_name,
+        },
         rider: delivery.rider_name
           ? {
               ...DEMO_RIDER,
@@ -1298,33 +1346,31 @@ function BookingPage({ booking, updateBooking, pricing, onBack, onContinue }) {
       />
 
       <section className="form-card">
-        <div className="form-section">
-          <label>Pickup location</label>
+        <AddressLocationSection
+          title="Pickup address"
+          value={booking.pickup}
+          coords={booking.pickupCoords}
+          onChange={(value) => updateBooking("pickup", value)}
+          onSelect={({ address, coords }) => {
+            if (address && address !== booking.pickup) {
+              updateBooking("pickup", address);
+            }
+            updateBooking("pickupCoords", coords);
+          }}
+        />
 
-          <div className="input-with-icon">
-            <MapPin size={19} />
-
-            <input
-              value={booking.pickup}
-              onChange={(event) => updateBooking("pickup", event.target.value)}
-              placeholder="e.g. Ikeja City Mall"
-            />
-          </div>
-        </div>
-
-        <div className="form-section">
-          <label>Drop-off location</label>
-
-          <div className="input-with-icon">
-            <MapPin size={19} />
-
-            <input
-              value={booking.dropoff}
-              onChange={(event) => updateBooking("dropoff", event.target.value)}
-              placeholder="e.g. Yaba"
-            />
-          </div>
-        </div>
+        <AddressLocationSection
+          title="Drop-off address"
+          value={booking.dropoff}
+          coords={booking.dropoffCoords}
+          onChange={(value) => updateBooking("dropoff", value)}
+          onSelect={({ address, coords }) => {
+            if (address && address !== booking.dropoff) {
+              updateBooking("dropoff", address);
+            }
+            updateBooking("dropoffCoords", coords);
+          }}
+        />
 
         <div className="form-divider"></div>
 
@@ -1674,18 +1720,6 @@ function TrackingPage({
   const paymentIsAvailable =
     PAYMENT_ELIGIBLE_STATUSES.includes(status) && !paymentIsPaid;
 
-  const pickup = {
-    lat: delivery?.pickup_lat ?? 6.6018,
-    lng: delivery?.pickup_lng ?? 3.3515,
-    label: booking?.pickup || "Pickup location",
-  };
-
-  const dropoff = {
-    lat: delivery?.dropoff_lat ?? 6.4474,
-    lng: delivery?.dropoff_lng ?? 3.4722,
-    label: booking?.dropoff || "Drop-off location",
-  };
-
   const trackingStatus = {
     accepted: {
       title: "Rider accepted your delivery",
@@ -1879,15 +1913,6 @@ function TrackingPage({
           </div>
         </div>
 
-        <div className="tracking-map-wrapper">
-          <TrackingMap
-            deliveryId={delivery?.id}
-            pickup={pickup}
-            dropoff={dropoff}
-            riderName={rider?.name || DEMO_RIDER.name}
-            status={status}
-          />
-        </div>
 
         <div className="tracking-status-card">
           <div className="tracking-status-icon">{currentStatus.icon}</div>
@@ -2098,13 +2123,6 @@ function TrackingPage({
       </div>
     </div>
   );
-  {
-    status !== "delivered" && !paymentIsPaid && (
-      <button className="secondary-button" onClick={onCancel}>
-        Cancel delivery
-      </button>
-    );
-  }
 }
 
 /*

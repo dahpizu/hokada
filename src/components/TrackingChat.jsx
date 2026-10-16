@@ -9,39 +9,8 @@ export default function TrackingChat({ deliveryId, status }) {
   const [messageText, setMessageText] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [customerUser, setCustomerUser] = useState(null);
 
   const chatEnabled = CHAT_ENABLED_STATUSES.includes(status);
-
-  useEffect(() => {
-    if (!supabase) {
-      return;
-    }
-
-    let mounted = true;
-
-    async function loadCustomerSession() {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-
-      if (error) {
-        console.error("Could not get customer session:", error);
-        return;
-      }
-
-      if (mounted) {
-        setCustomerUser(user || null);
-      }
-    }
-
-    loadCustomerSession();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!supabase || !deliveryId) {
@@ -142,7 +111,6 @@ export default function TrackingChat({ deliveryId, status }) {
         return;
       }
 
-      setCustomerUser(user);
 
       const { error } = await supabase.from("delivery_messages").insert({
         delivery_id: deliveryId,

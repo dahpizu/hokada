@@ -158,11 +158,7 @@ export default function TrackingMap({
 }) {
   const [riderPosition, setRiderPosition] = useState(DEMO_START);
   const [isLive, setIsLive] = useState(false);
-  const [mode, setMode] = useState("demo");
   const [lastUpdate, setLastUpdate] = useState(null);
-
-  const isPickupStage =
-    status === "accepted" || status === "in_transit" || status === "arrived";
 
   const isDropoffStage =
     status === "collected" ||
@@ -184,14 +180,6 @@ export default function TrackingMap({
     return calculateDistanceKm(riderPosition, destination);
   }, [riderPosition, destination]);
 
-  const progress = useMemo(() => {
-    if (isDropoffStage) {
-      return calculateProgress(riderPosition, pickup, destination);
-    }
-
-    return calculateProgress(riderPosition, DEMO_START, destination);
-  }, [riderPosition, pickup, destination, isDropoffStage]);
-
   /*
    * REAL RIDER GPS
    *
@@ -202,7 +190,7 @@ export default function TrackingMap({
    */
 
   useEffect(() => {
-    if (!supabase || !deliveryId || deliveryId === "demo-delivery") {
+    if (!supabase || !deliveryId || deliveryId === "demo-delivery" || status === "delivered") {
       return;
     }
 
@@ -249,7 +237,6 @@ export default function TrackingMap({
 
         setRiderPosition(position);
         setIsLive(true);
-        setMode("live");
 
         setLastUpdate(data.updated_at ? new Date(data.updated_at) : new Date());
       } else {
@@ -287,7 +274,6 @@ export default function TrackingMap({
             location.timestamp ? new Date(location.timestamp) : new Date()
           );
 
-          setMode("live");
           setIsLive(true);
         })
         .subscribe((subscriptionStatus) => {
@@ -306,7 +292,7 @@ export default function TrackingMap({
         channel = null;
       }
     };
-  }, [deliveryId]);
+  }, [deliveryId, status]);
 
   /*
    * REALTIME DATABASE FALLBACK
@@ -316,7 +302,7 @@ export default function TrackingMap({
    */
 
   useEffect(() => {
-    if (!supabase || !deliveryId || deliveryId === "demo-delivery") {
+    if (!supabase || !deliveryId || deliveryId === "demo-delivery" || status === "delivered") {
       return;
     }
 
@@ -361,7 +347,6 @@ export default function TrackingMap({
             delivery.updated_at ? new Date(delivery.updated_at) : new Date()
           );
 
-          setMode("live");
           setIsLive(true);
         }
       )
@@ -373,7 +358,7 @@ export default function TrackingMap({
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [deliveryId]);
+  }, [deliveryId, status]);
 
   /*
    * DEMO MODE
@@ -387,7 +372,6 @@ export default function TrackingMap({
       return;
     }
 
-    setMode("demo");
     setIsLive(false);
 
     const interval = setInterval(() => {

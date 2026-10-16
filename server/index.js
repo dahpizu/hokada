@@ -127,9 +127,9 @@ async function paystackRequest(path, body) {
   return result.data;
 }
 
-// Return true only for Paystack's explicit "reference not found" response.
-// Network errors, authentication errors, and ambiguous responses throw.
-async function paystackReferenceDefinitelyMissing(reference) {
+// Inspect Paystack's authoritative status before releasing a pending payment.
+// Only a missing, abandoned, or failed transaction may be retried.
+async function inspectPaystackReference(reference) {
   const response = await fetch(
     `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
     {
@@ -154,11 +154,23 @@ async function paystackReferenceDefinitelyMissing(reference) {
       String(result.message || "").trim()
     )
   ) {
-    return true;
+    return "missing";
   }
 
   if (response.ok && result.status === true && result.data) {
-    return false;
+    const status = String(result.data.status || "").toLowerCase();
+
+    if (["abandoned", "failed"].includes(status)) {
+      return status;
+    }
+
+    if (status === "success") {
+      return "success";
+    }
+
+    // Ongoing, pending, processing, queued, and unknown states are
+    // conservatively treated as potentially active transactions.
+    return "active";
   }
 
   throw new Error(
@@ -217,11 +229,38 @@ async function verifyAndRecordPayment(reference) {
     payment.amount === expectedAmountKobo &&
     String(payment.metadata?.delivery_id || "") === String(delivery.id);
 
+  const transactionStatus = String(payment.status || "").toLowerCase();
+
+  if (transactionStatus !== "success") {
+    if (
+      ["pending", "ongoing", "processing", "queued"].includes(
+        transactionStatus
+      )
+    ) {
+      return {
+        verified: false,
+        status: "pending",
+        message:
+          "Paystack has not confirmed this payment yet. Your delivery remains protected. Check the payment status again shortly.",
+      };
+    }
+
+    if (["abandoned", "failed"].includes(transactionStatus)) {
+      return {
+        verified: false,
+        status: transactionStatus,
+        message:
+          "Paystack reports that this payment was not completed. HOKADA will check the previous transaction before allowing another checkout.",
+      };
+    }
+  }
+
   if (!valid) {
     return {
       verified: false,
+      status: "unverified",
       message:
-        "Payment could not be matched to the expected delivery and amount.",
+        "Payment could not be matched to the expected delivery and amount. Do not pay again until this transaction has been checked.",
     };
   }
 
@@ -324,6 +363,191 @@ app.post(
 
 app.use(express.json({ limit: "32kb" }));
 
+
+// Server-owned delivery pricing. Keep these estimates aligned with the
+// current customer-facing pricing rules in src/App.jsx.
+function estimateServerDeliveryDistance(pickup, dropoff) {
+  const locationText = `${pickup} ${dropoff}`.toLowerCase();
+
+  const knownRoutes = [
+    { keywords: ["ikeja", "yaba"], distance: 12 },
+    { keywords: ["ikeja", "lekki"], distance: 24 },
+    { keywords: ["ikeja", "ajah"], distance: 28 },
+    { keywords: ["yaba", "lekki"], distance: 17 },
+    { keywords: ["yaba", "ajah"], distance: 21 },
+    { keywords: ["lekki", "ajah"], distance: 14 },
+    { keywords: ["lekki", "victoria island"], distance: 9 },
+    { keywords: ["ikeja", "victoria island"], distance: 20 },
+    { keywords: ["surulere", "ikeja"], distance: 11 },
+    { keywords: ["surulere", "yaba"], distance: 8 },
+    { keywords: ["surulere", "lekki"], distance: 19 },
+  ];
+
+  const matchedRoute = knownRoutes.find(
+    (route) =>
+      locationText.includes(route.keywords[0]) &&
+      locationText.includes(route.keywords[1])
+  );
+
+  if (matchedRoute) return matchedRoute.distance;
+
+  const combinedLength = pickup.length + dropoff.length;
+  return Math.max(5, Math.min(Math.round(combinedLength / 3), 30));
+}
+
+function calculateServerDeliveryFee(pickup, dropoff, packageType, deliveryType) {
+  const packageFees = { Small: 0, Medium: 300, Large: 700 };
+  const distance = estimateServerDeliveryDistance(pickup, dropoff);
+
+  return (
+    800 +
+    distance * 150 +
+    packageFees[packageType] +
+    (deliveryType === "Express" ? 500 : 0)
+  );
+}
+
+// Create deliveries through the authenticated backend instead of allowing
+// the browser to choose the saved price, payment state, rider, or earnings.
+app.post("/api/deliveries", requireCustomer, async (req, res) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Delivery service configuration is incomplete.",
+      });
+    }
+
+    const body = req.body ?? {};
+    const {
+      pickup_address,
+      dropoff_address,
+      pickup_lat,
+      pickup_lng,
+      dropoff_lat,
+      dropoff_lng,
+      recipient_name,
+      recipient_phone,
+      package_type,
+      delivery_type,
+      notes,
+    } = body;
+
+    const isText = (value, maxLength) =>
+      typeof value === "string" &&
+      value.trim().length > 0 &&
+      value.trim().length <= maxLength;
+
+    if (
+      !isText(pickup_address, 500) ||
+      !isText(dropoff_address, 500) ||
+      !isText(recipient_name, 150) ||
+      !isText(recipient_phone, 50)
+    ) {
+      return res.status(400).json({
+        error: "Enter valid pickup, drop-off, recipient name, and phone details.",
+      });
+    }
+
+    const coordinates = [
+      pickup_lat,
+      pickup_lng,
+      dropoff_lat,
+      dropoff_lng,
+    ];
+
+    if (
+      !coordinates.every(
+        (value) => typeof value === "number" && Number.isFinite(value)
+      ) ||
+      Math.abs(pickup_lat) > 90 ||
+      Math.abs(dropoff_lat) > 90 ||
+      Math.abs(pickup_lng) > 180 ||
+      Math.abs(dropoff_lng) > 180
+    ) {
+      return res.status(400).json({
+        error: "The pickup or drop-off location is invalid. Please try again.",
+      });
+    }
+
+    if (!["Small", "Medium", "Large"].includes(package_type)) {
+      return res.status(400).json({
+        error: "Choose a valid package size.",
+      });
+    }
+
+    if (!["Standard", "Express"].includes(delivery_type)) {
+      return res.status(400).json({
+        error: "Choose a valid delivery type.",
+      });
+    }
+
+    if (
+      notes !== null &&
+      notes !== undefined &&
+      (typeof notes !== "string" || notes.length > 2000)
+    ) {
+      return res.status(400).json({
+        error: "Delivery notes must be 2,000 characters or fewer.",
+      });
+    }
+
+    const deliveryFee = calculateServerDeliveryFee(
+      pickup_address.trim(),
+      dropoff_address.trim(),
+      package_type,
+      delivery_type
+    );
+
+    const payload = {
+      customer_id: req.customer.id,
+      customer_name:
+        req.customer.user_metadata?.full_name || "HOKADA Customer",
+
+      pickup_address: pickup_address.trim(),
+      dropoff_address: dropoff_address.trim(),
+      pickup_lat,
+      pickup_lng,
+      dropoff_lat,
+      dropoff_lng,
+
+      recipient_name: recipient_name.trim(),
+      recipient_phone: recipient_phone.trim(),
+
+      package_type,
+      package_description: `${package_type} package`,
+      delivery_type,
+      notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+
+      // Never accept the delivery fee from the browser.
+      delivery_fee: deliveryFee,
+
+      // Initial state is controlled by the server.
+      rider_earnings: 0,
+      status: "searching",
+      payment_status: "unpaid",
+      payment_provider: null,
+      payment_reference: null,
+      payment_amount_kobo: null,
+      paid_at: null,
+    };
+
+    const { data: delivery, error } = await supabase
+      .from("deliveries")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+
+    return res.status(201).json({ delivery });
+  } catch (error) {
+    console.error("Delivery creation failed:", error.message);
+    return res.status(500).json({
+      error: "Could not create your delivery. Please try again.",
+    });
+  }
+});
+
 // Initialize payment for the authenticated owner of the delivery.
 app.post(
   "/api/payments/initialize",
@@ -379,20 +603,35 @@ app.post(
           });
         }
 
-        const referenceMissing =
-          await paystackReferenceDefinitelyMissing(
-            delivery.payment_reference
-          );
+        const oldReference = delivery.payment_reference;
+        const oldAmount = delivery.payment_amount_kobo;
+        const referenceStatus =
+          await inspectPaystackReference(oldReference);
 
-        if (!referenceMissing) {
+        if (referenceStatus === "success") {
+          // A successful transaction must be verified against the delivery,
+          // amount, currency, reference, and metadata before retry is blocked.
+          const verification = await verifyAndRecordPayment(oldReference);
+
+          if (verification.verified) {
+            return res.status(409).json({
+              error:
+                "This delivery has already been paid for. Refresh your delivery history to see the confirmed payment.",
+            });
+          }
+
           return res.status(409).json({
             error:
-              "A payment is already pending for this delivery. Check your delivery history or contact support before retrying.",
+              "Paystack reports a successful transaction, but it could not be safely matched to this delivery. Do not pay again; contact support to check the payment.",
           });
         }
 
-        const oldReference = delivery.payment_reference;
-        const oldAmount = delivery.payment_amount_kobo;
+        if (!["missing", "abandoned", "failed"].includes(referenceStatus)) {
+          return res.status(409).json({
+            error:
+              "Your previous payment may still be processing. HOKADA has kept it protected from duplicate charges. Please retry verification or check again shortly.",
+          });
+        }
 
         const { data: released, error: releaseError } = await supabase
           .from("deliveries")
@@ -538,8 +777,11 @@ app.get(
       const result = await verifyAndRecordPayment(reference);
 
       if (!result.verified) {
-        return res.status(400).json({
+        const pending = result.status === "pending";
+
+        return res.status(pending ? 202 : 400).json({
           success: false,
+          status: result.status || "unverified",
           error: result.message,
         });
       }

@@ -288,7 +288,9 @@ export default function RiderApp() {
 
       const { data, error } = await supabase
         .from("deliveries")
-        .select("*")
+        .select(
+          "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at"
+        )
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -328,8 +330,6 @@ export default function RiderApp() {
             previous?.id === active.id &&
             previous.status === active.status &&
             previous.payment_status === active.payment_status &&
-            previous.rider_lat === active.rider_lat &&
-            previous.rider_lng === active.rider_lng &&
             previous.updated_at === active.updated_at
           ) {
             return previous;
@@ -517,7 +517,9 @@ export default function RiderApp() {
     }
 
     if (riderProfileRef.current?.approval_status !== "approved") {
-      setMessage("Your rider account must be approved before accepting deliveries.");
+      setMessage(
+        "Your rider account must be approved before accepting deliveries."
+      );
       return;
     }
 
@@ -539,7 +541,9 @@ export default function RiderApp() {
         .eq("id", availableDelivery.id)
         .is("rider_id", null)
         .in("status", AVAILABLE_STATUSES)
-        .select()
+        .select(
+          "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at"
+        )
         .maybeSingle();
 
       if (error) {
@@ -648,7 +652,9 @@ export default function RiderApp() {
         .eq("rider_id", riderId)
         .eq("status", "arrived_at_dropoff")
         .eq("payment_status", "paid")
-        .select()
+        .select(
+          "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at"
+        )
         .maybeSingle();
 
       if (completeError) throw completeError;
@@ -728,7 +734,11 @@ export default function RiderApp() {
           .eq("payment_status", "paid");
       }
 
-      const { data, error } = await updateQuery.select().maybeSingle();
+      const { data, error } = await updateQuery
+        .select(
+          "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at"
+        )
+        .maybeSingle();
 
       if (error) {
         console.error("Status update error:", error);
@@ -771,10 +781,7 @@ export default function RiderApp() {
   async function updateOnlineStatus(nextStatus) {
     if (!supabase || !session?.user?.id) return;
 
-    if (
-      nextStatus &&
-      riderProfileRef.current?.approval_status !== "approved"
-    ) {
+    if (nextStatus && riderProfileRef.current?.approval_status !== "approved") {
       setIsOnline(false);
       setMessage("Your rider account must be approved before going online.");
       return;

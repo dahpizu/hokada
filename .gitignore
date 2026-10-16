@@ -38,3 +38,11 @@ hokada-project.zip
 
 # Local project backup
 hokada-project.zip
+
+# Local backups — never deploy these
+backups/
+*.bak
+*.backup
+*.backup-*
+*.before-*
+*.step*.bak
