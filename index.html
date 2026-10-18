@@ -8,6 +8,24 @@
     <link rel="icon" type="image/svg+xml" href="/hokada/hokada-icon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="/hokada/apple-touch-icon.png" />
     <title>HOKADA — Fast. Safe. Delivered.</title>
+    <script>
+      (() => {
+        const path = window.location.pathname.replace(/^\/hokada/, "") || "/";
+        const params = new URLSearchParams(window.location.search);
+        const isRider = path.startsWith("/rider") || params.get("app") === "rider";
+        const manifest = document.createElement("link");
+        manifest.rel = "manifest";
+        manifest.href = isRider
+          ? "/hokada/rider.webmanifest"
+          : "/hokada/customer.webmanifest";
+        document.head.appendChild(manifest);
+        if (isRider) {
+          document.querySelector('link[rel="apple-touch-icon"]').href =
+            "/hokada/hokada-rider-icon-180.png";
+          document.title = "HOKADA Rider";
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

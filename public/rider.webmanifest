@@ -1,0 +1,17 @@
+{
+  "id": "/hokada/rider/",
+  "name": "HOKADA Rider",
+  "short_name": "HOKADA Rider",
+  "description": "Manage delivery jobs and track rider earnings with HOKADA.",
+  "start_url": "/hokada/rider/",
+  "scope": "/hokada/",
+  "display": "standalone",
+  "background_color": "#071b12",
+  "theme_color": "#071b12",
+  "lang": "en",
+  "icons": [
+    {"src": "hokada-rider-icon.svg", "sizes": "any", "type": "image/svg+xml"},
+    {"src": "hokada-rider-icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "hokada-rider-icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
