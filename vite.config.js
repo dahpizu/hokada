@@ -1,7 +1,33 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  plugins: [react()],
   base: '/hokada/',
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['hokada-icon.svg'],
+      manifest: {
+        id: '/hokada/',
+        name: 'HOKADA — Fast. Safe. Delivered.',
+        short_name: 'HOKADA',
+        description: 'Fast and reliable dispatch delivery across Lagos.',
+        theme_color: '#071b12',
+        background_color: '#071b12',
+        display: 'standalone',
+        start_url: '/hokada/',
+        scope: '/hokada/',
+        icons: [
+          {
+            src: 'hokada-icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any'
+          }
+        ]
+      }
+    })
+  ]
 })
