@@ -6702,3 +6702,39 @@ svg {
     width: min(calc(100% - 48px), 1080px);
   }
 }
+
+/* HOKADA — final viewport width normalization */
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.app-shell,
+.main-content,
+.page {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.page {
+  width: min(calc(100% - 40px), 1080px);
+}
+
+@media (max-width: 699px) {
+  .page {
+    width: calc(100% - 28px);
+  }
+}
+
+@media (max-width: 360px) {
+  .page {
+    width: calc(100% - 20px);
+  }
+}
