@@ -19,3 +19,172 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* HOKADA: mobile-friendly forms and prevent iPhone input zoom */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+*, 
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+input,
+select,
+textarea,
+button {
+  font-size: 16px;
+}
+
+.hokada-address-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-field input,
+.hokada-address-field select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 14px;
+  font-size: 16px !important;
+  line-height: 1.4;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.hokada-address-summary {
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.hokada-place-suggestions {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.hokada-place-suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 12px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hokada-place-suggestion span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hokada-address-confirm {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  .hokada-address-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .hokada-address-fields {
+    gap: 12px;
+  }
+
+  .hokada-address-field input,
+  .hokada-address-field select {
+    min-height: 48px;
+  }
+}
+
+
+/* HOKADA final mobile form safeguards */
+.hokada-address-fields input,
+.hokada-address-fields select,
+.hokada-address-fields textarea,
+.hokada-address-field input,
+.hokada-address-field select,
+.hokada-address-field textarea {
+  font-size: 16px !important;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-section,
+.hokada-address-fields,
+.hokada-address-field {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hokada-place-suggestions,
+.hokada-place-suggestion {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .hokada-address-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hokada-address-fields input,
+  .hokada-address-fields select,
+  .hokada-address-field input,
+  .hokada-address-field select {
+    min-height: 48px;
+    font-size: 16px !important;
+  }
+}
