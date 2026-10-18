@@ -6610,3 +6610,95 @@ textarea::placeholder {
   }
 
 }
+
+/* HOKADA — cross-device responsive layout safeguards */
+.app-shell,
+.main-content,
+.page {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.main-content {
+  width: 100%;
+}
+
+.page {
+  width: min(calc(100% - 40px), 1080px);
+}
+
+.topbar {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.hero-section,
+.booking-card,
+.quick-section,
+.promo-card,
+.form-card {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+@media (max-width: 699px) {
+  .page {
+    width: calc(100% - 28px);
+    padding-top: 24px;
+  }
+
+  .topbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hero-section h1 {
+    font-size: clamp(36px, 11vw, 58px);
+    line-height: 1.05;
+    letter-spacing: -1.5px;
+    overflow-wrap: anywhere;
+  }
+
+  .booking-card,
+  .form-card {
+    padding: clamp(14px, 4vw, 20px);
+  }
+
+  .quick-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quick-card {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .page {
+    width: calc(100% - 20px);
+  }
+
+  .hero-section h1 {
+    font-size: clamp(32px, 10.5vw, 40px);
+    letter-spacing: -1px;
+  }
+
+  .booking-card-header h2 {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 700px) {
+  .page {
+    width: min(calc(100% - 48px), 1080px);
+  }
+}

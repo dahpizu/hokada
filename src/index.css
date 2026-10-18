@@ -188,3 +188,73 @@ button {
     font-size: 16px !important;
   }
 }
+/* HOKADA — mobile Safari zoom and horizontal overflow fix */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  overflow-x: clip;
+}
+
+input,
+select,
+textarea,
+button {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px !important;
+  -webkit-appearance: none;
+}
+
+@media screen and (max-width: 768px) {
+  .hokada-address-section,
+  .hokada-address-fields,
+  .hokada-address-field,
+  .hokada-address-map-search,
+  .hokada-address-summary {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hokada-address-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hokada-address-field input,
+  .hokada-address-field select,
+  .hokada-address-field textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    font-size: 16px !important;
+  }
+
+  .hokada-address-confirm {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .hokada-place-suggestion {
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+}

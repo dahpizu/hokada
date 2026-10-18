@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, Search, LoaderCircle, CheckCircle2 } from "lucide-react";
+import {
+  MapPin,
+  Search,
+  LoaderCircle,
+  CheckCircle2,
+  LocateFixed
+} from "lucide-react";
 
 const STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa",
@@ -17,16 +23,13 @@ const AREAS = {
     "Gbagada", "Ibeju-Lekki", "Ikeja", "Ikorodu", "Ikotun",
     "Isolo", "Ketu", "Lekki", "Maryland", "Mushin",
     "Ojo", "Ojodu", "Ojota", "Okota", "Oniru",
-    "Orile", "Oshodi", "Surulere", "Victoria Island",
-    "Yaba"
+    "Orile", "Oshodi", "Surulere", "Victoria Island", "Yaba"
   ],
   Ogun: [
     "Abeokuta", "Agbara", "Ijebu Ode", "Mowe",
     "Odogbolu", "Ota", "Sagamu"
   ],
-  Oyo: [
-    "Ibadan", "Ogbomoso", "Oyo", "Iseyin"
-  ],
+  Oyo: ["Ibadan", "Ogbomoso", "Oyo", "Iseyin"],
   FCT: [
     "Abuja Municipal", "Gwagwalada", "Kuje",
     "Kubwa", "Lugbe", "Nyanya"
@@ -46,10 +49,13 @@ export default function AddressLocationSection({
   const [landmark, setLandmark] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [locationMethod, setLocationMethod] = useState("");
   const [error, setError] = useState("");
 
-  const area = areaChoice === "__custom__" ? customArea.trim() : areaChoice;
+  const area =
+    areaChoice === "__custom__" ? customArea.trim() : areaChoice;
 
   const fullAddress = useMemo(() => {
     const parts = [];
@@ -83,15 +89,24 @@ export default function AddressLocationSection({
         : nextAreaChoice;
 
     const parts = [];
+
     if (nextHouseStreet.trim()) parts.push(nextHouseStreet.trim());
     if (nextArea) parts.push(nextArea);
     if (nextState) parts.push(nextState);
     parts.push("Nigeria");
+
     if (nextLandmark.trim()) {
       parts.push(`Near ${nextLandmark.trim()}`);
     }
 
     onChange(parts.filter(Boolean).join(", "));
+  }
+
+  function clearLocation() {
+    setSuggestions([]);
+    setSelectedLocation(null);
+    setLocationMethod("");
+    setError("");
   }
 
   function handleStateChange(nextState) {
@@ -100,9 +115,7 @@ export default function AddressLocationSection({
     setCustomArea("");
     setHouseStreet("");
     setLandmark("");
-    setSuggestions([]);
-    setSelectedLocation(null);
-    setError("");
+    clearLocation();
 
     publishAddress({
       state: nextState,
@@ -118,9 +131,7 @@ export default function AddressLocationSection({
     setCustomArea("");
     setHouseStreet("");
     setLandmark("");
-    setSuggestions([]);
-    setSelectedLocation(null);
-    setError("");
+    clearLocation();
 
     publishAddress({
       areaChoice: nextArea,
@@ -132,10 +143,7 @@ export default function AddressLocationSection({
 
   function handleHouseStreetChange(nextValue) {
     setHouseStreet(nextValue);
-    setSuggestions([]);
-    setSelectedLocation(null);
-    setError("");
-
+    clearLocation();
     publishAddress({ houseStreet: nextValue });
   }
 
@@ -144,11 +152,24 @@ export default function AddressLocationSection({
     publishAddress({ landmark: nextValue });
   }
 
+  function handleCustomAreaChange(nextValue) {
+    setCustomArea(nextValue);
+    setHouseStreet("");
+    setLandmark("");
+    clearLocation();
+
+    publishAddress({
+      customArea: nextValue,
+      houseStreet: "",
+      landmark: ""
+    });
+  }
+
   useEffect(() => {
     if (!state || !area || !houseStreet.trim()) {
       setSuggestions([]);
       setSearching(false);
-      return;
+      return undefined;
     }
 
     const controller = new AbortController();
@@ -162,7 +183,7 @@ export default function AddressLocationSection({
           area,
           state,
           "Nigeria"
-        ].filter(Boolean).join(", ");
+        ].join(", ");
 
         const params = new URLSearchParams({
           q: query,
@@ -181,17 +202,23 @@ export default function AddressLocationSection({
         );
 
         if (!response.ok) {
-          throw new Error("Address search failed.");
+          throw new Error("Address search is temporarily unavailable.");
         }
 
         const results = await response.json();
 
         setSuggestions(
-          results.map((item) => ({
-            address: item.display_name,
-            lat: Number(item.lat),
-            lng: Number(item.lon)
-          }))
+          results
+            .map((item) => ({
+              address: item.display_name,
+              lat: Number(item.lat),
+              lng: Number(item.lon)
+            }))
+            .filter(
+              (item) =>
+                Number.isFinite(item.lat) &&
+                Number.isFinite(item.lng)
+            )
         );
       } catch (err) {
         if (err.name !== "AbortError") {
@@ -202,7 +229,7 @@ export default function AddressLocationSection({
           setSearching(false);
         }
       }
-    }, 700);
+    }, 800);
 
     return () => {
       clearTimeout(timer);
@@ -216,7 +243,8 @@ export default function AddressLocationSection({
       lng: suggestion.lng
     };
 
-    setSelectedLocation({ address: suggestion.address, coords });
+    setSelectedLocation({ address: fullAddress, coords });
+    setLocationMethod("map-search");
     setSuggestions([]);
     setError("");
 
@@ -227,6 +255,71 @@ export default function AddressLocationSection({
     });
   }
 
+  function useCurrentLocation() {
+    if (!state || !area || !houseStreet.trim()) {
+      setError(
+        "Enter your state, area and street address before selecting your location."
+      );
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setError(
+        "GPS is not supported by this browser. Select a map search result instead."
+      );
+      return;
+    }
+
+    setLocating(true);
+    setError("");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+
+        setSelectedLocation({
+          address: fullAddress,
+          coords
+        });
+
+        setLocationMethod("gps");
+        setSuggestions([]);
+        setLocating(false);
+
+        onChange(fullAddress);
+        onSelect({
+          address: fullAddress,
+          coords
+        });
+      },
+      (geoError) => {
+        setLocating(false);
+
+        if (geoError.code === 1) {
+          setError(
+            "Location permission was denied. Allow location access in your browser settings, or choose a map search result."
+          );
+        } else if (geoError.code === 3) {
+          setError(
+            "Getting your location took too long. Try again or choose a map search result."
+          );
+        } else {
+          setError(
+            "Could not get your GPS location. Check your device location settings and try again."
+          );
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0
+      }
+    );
+  }
+
   function confirmTypedAddress() {
     if (!state || !area || !houseStreet.trim()) {
       setError("Please complete the required address fields.");
@@ -235,16 +328,18 @@ export default function AddressLocationSection({
 
     if (!selectedLocation) {
       setError(
-        "Select a suggested map location to confirm the coordinates. " +
-        "Your address text is still saved, but its map position is not verified."
+        "Choose a map search result or use GPS to confirm the location."
       );
       return;
     }
 
+    onChange(fullAddress);
     onSelect({
       address: fullAddress,
       coords: selectedLocation.coords
     });
+
+    setError("");
   }
 
   return (
@@ -260,6 +355,7 @@ export default function AddressLocationSection({
           <select
             value={state}
             onChange={(event) => handleStateChange(event.target.value)}
+            autoComplete="address-level1"
           >
             <option value="">Choose your state</option>
             {STATES.map((item) => (
@@ -278,13 +374,11 @@ export default function AddressLocationSection({
               onChange={(event) => handleAreaChange(event.target.value)}
             >
               <option value="">Choose your area</option>
-
               {(AREAS[state] || []).map((item) => (
                 <option key={item} value={item}>
                   {item}
                 </option>
               ))}
-
               <option value="__custom__">
                 Can't find my area — type it
               </option>
@@ -298,18 +392,9 @@ export default function AddressLocationSection({
             <input
               type="text"
               value={customArea}
-              onChange={(event) => {
-                setCustomArea(event.target.value);
-                setHouseStreet("");
-                setLandmark("");
-                setSuggestions([]);
-                setSelectedLocation(null);
-                publishAddress({
-                  customArea: event.target.value,
-                  houseStreet: "",
-                  landmark: ""
-                });
-              }}
+              onChange={(event) =>
+                handleCustomAreaChange(event.target.value)
+              }
               placeholder="e.g. Bakare, Ikotun"
               autoComplete="address-level3"
             />
@@ -337,7 +422,9 @@ export default function AddressLocationSection({
             <input
               type="text"
               value={landmark}
-              onChange={(event) => handleLandmarkChange(event.target.value)}
+              onChange={(event) =>
+                handleLandmarkChange(event.target.value)
+              }
               placeholder="e.g. Near the filling station"
             />
           </label>
@@ -348,8 +435,31 @@ export default function AddressLocationSection({
         <div className="hokada-address-map-search">
           <div className="hokada-address-search-heading">
             <Search size={16} aria-hidden="true" />
-            <span>Confirm your location on the map</span>
+            <span>Choose the actual delivery location</span>
           </div>
+
+          <p className="hokada-address-status">
+            Can't find your exact address? You can use GPS if your phone is
+            currently at the location.
+          </p>
+
+          <button
+            type="button"
+            className="hokada-place-suggestion"
+            onClick={useCurrentLocation}
+            disabled={locating}
+          >
+            {locating ? (
+              <LoaderCircle size={18} className="hokada-spin" />
+            ) : (
+              <LocateFixed size={18} />
+            )}
+            <span>
+              {locating
+                ? "Getting your GPS location..."
+                : "Use this phone's current location"}
+            </span>
+          </button>
 
           {searching && (
             <p className="hokada-address-status">
@@ -374,10 +484,22 @@ export default function AddressLocationSection({
             </div>
           )}
 
+          {!searching &&
+            houseStreet.trim() &&
+            suggestions.length === 0 &&
+            !selectedLocation && (
+              <p className="hokada-address-status">
+                No matching address found? That's okay. Use GPS at the
+                actual location or try a different street description.
+              </p>
+            )}
+
           {selectedLocation && (
             <p className="hokada-address-status hokada-address-success">
               <CheckCircle2 size={16} />
-              Map location selected
+              {locationMethod === "gps"
+                ? "GPS location captured"
+                : "Map search location selected"}
             </p>
           )}
         </div>
@@ -403,7 +525,7 @@ export default function AddressLocationSection({
           type="button"
           className="hokada-address-confirm"
           onClick={confirmTypedAddress}
-          disabled={!selectedLocation}
+          disabled={!selectedLocation || locating}
         >
           <CheckCircle2 size={18} />
           Confirm address
