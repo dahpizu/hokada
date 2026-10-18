@@ -11,7 +11,7 @@ export default defineConfig({
       includeAssets: ['hokada-icon.svg'],
       manifest: {
         id: '/hokada/',
-        name: 'HOKADA — Fast. Safe. Delivered.',
+        name: 'HOKADA',
         short_name: 'HOKADA',
         description: 'Fast and reliable dispatch delivery across Lagos.',
         theme_color: '#071b12',

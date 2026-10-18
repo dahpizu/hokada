@@ -1094,7 +1094,6 @@ function App() {
 
           <div className="brand-text">
             <span>HOKADA</span>
-            <small>FAST. SAFE. DELIVERED.</small>
           </div>
         </button>
 
