@@ -1,8 +1,56 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#071b12"/>
-  <circle cx="256" cy="256" r="174" fill="#19b85a"/>
-  <path d="M145 155h48v84h126v-84h48v202h-48v-75H193v75h-48z"
+  <rect width="512" height="512" rx="108" fill="#071b12"/>
+
+  <circle cx="256" cy="256" r="196" fill="#19b85a"/>
+
+  <!-- Wheels -->
+  <circle cx="148" cy="342" r="48" fill="#071b12"
+          stroke="#ffffff" stroke-width="12"/>
+  <circle cx="365" cy="342" r="48" fill="#071b12"
+          stroke="#ffffff" stroke-width="12"/>
+  <circle cx="148" cy="342" r="13" fill="#8cff72"/>
+  <circle cx="365" cy="342" r="13" fill="#8cff72"/>
+
+  <!-- Motorcycle frame -->
+  <path d="M148 342 L205 265 L280 342 L224 342 L184 294
+           M280 342 L326 266 L365 342"
+        fill="none" stroke="#ffffff" stroke-width="16"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Seat and fuel tank -->
+  <path d="M190 265 L226 265 L245 286 L213 294 Z"
+        fill="#071b12"/>
+  <path d="M242 275 Q260 252 292 275 L280 299 L247 299 Z"
+        fill="#8cff72"/>
+
+  <!-- Front fork and handlebars -->
+  <path d="M326 266 L310 235 L338 235"
+        fill="none" stroke="#ffffff" stroke-width="13"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Rider -->
+  <circle cx="252" cy="153" r="34" fill="#071b12"/>
+  <path d="M222 153 Q220 119 252 119 Q284 119 284 153
+           L271 162 L228 162 Z"
         fill="#ffffff"/>
-  <circle cx="256" cy="256" r="205" fill="none"
-          stroke="#8cff72" stroke-width="8"/>
+  <path d="M226 151 L270 151"
+        stroke="#8cff72" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- Rider's body and arms -->
+  <path d="M239 191 Q260 181 279 199 L310 235
+           L291 250 L263 224 L240 248 L211 231 Z"
+        fill="#ffffff" stroke="#ffffff" stroke-width="8"
+        stroke-linejoin="round"/>
+  <path d="M273 207 L310 235"
+        stroke="#071b12" stroke-width="11" stroke-linecap="round"/>
+
+  <!-- Delivery box -->
+  <rect x="147" y="192" width="76" height="66" rx="10"
+        fill="#071b12" stroke="#8cff72" stroke-width="7"/>
+  <path d="M163 210 H207 M163 226 H199"
+        stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- Motion accents -->
+  <path d="M101 278 H133 M91 300 H119"
+        stroke="#8cff72" stroke-width="9" stroke-linecap="round"/>
 </svg>
