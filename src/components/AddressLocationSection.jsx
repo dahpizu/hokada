@@ -4,7 +4,10 @@ import {
   Search,
   LoaderCircle,
   CheckCircle2,
-  LocateFixed
+  LocateFixed,
+  History,
+  ChevronDown,
+  Trash2
 } from "lucide-react";
 
 const STATES = [
@@ -40,17 +43,25 @@ export default function AddressLocationSection({
   title = "Pickup Address",
   value = "",
   onChange = () => {},
-  onSelect = () => {}
+  onSelect = () => {},
+  savedAddresses = [],
+  onDeleteSavedAddress = () => {}
 }) {
   const [state, setState] = useState("");
   const [areaChoice, setAreaChoice] = useState("");
+  const [areaConfirmed, setAreaConfirmed] = useState(false);
   const [customArea, setCustomArea] = useState("");
+  const [areaSuggestions, setAreaSuggestions] = useState([]);
+  const [areaSearching, setAreaSearching] = useState(false);
+  const [showAreaSuggestions, setShowAreaSuggestions] = useState(false);
   const [houseStreet, setHouseStreet] = useState("");
   const [landmark, setLandmark] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedSavedAddress, setSelectedSavedAddress] = useState("");
+  const [showSavedAddresses, setShowSavedAddresses] = useState(false);
   const [locationMethod, setLocationMethod] = useState("");
   const [error, setError] = useState("");
 
@@ -73,7 +84,7 @@ export default function AddressLocationSection({
   }, [houseStreet, area, state, landmark]);
 
   const showArea = Boolean(state);
-  const showHouseStreet = Boolean(state && area);
+  const showHouseStreet = Boolean(state && area && areaConfirmed);
   const showLandmark = Boolean(state && area && houseStreet.trim());
 
   function publishAddress(next = {}) {
@@ -102,15 +113,86 @@ export default function AddressLocationSection({
     onChange(parts.filter(Boolean).join(", "));
   }
 
+  useEffect(() => {
+    if (locationMethod !== "saved" || !selectedSavedAddress) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      let target = null;
+
+      if (/pickup/i.test(title)) {
+        const dropoffSection = Array.from(
+          document.querySelectorAll(".hokada-address-section")
+        ).find((section) =>
+          /drop-off address/i.test(
+            section.querySelector("h3")?.textContent || ""
+          )
+        );
+
+        target = dropoffSection?.querySelector("h3");
+      } else if (/drop-off/i.test(title)) {
+        target = Array.from(document.querySelectorAll(".form-section label"))
+          .find((label) =>
+            /recipient name/i.test(label.textContent || "")
+          );
+      }
+
+      if (target) {
+        target.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [locationMethod, selectedSavedAddress, title]);
+
   function clearLocation() {
     setSuggestions([]);
     setSelectedLocation(null);
+    setSelectedSavedAddress("");
     setLocationMethod("");
     setError("");
   }
 
+  function chooseSavedAddress(key) {
+    setSelectedSavedAddress(key);
+    setAreaConfirmed(false);
+
+    if (!key) {
+      setSelectedLocation(null);
+      setLocationMethod("");
+      return;
+    }
+
+    const saved = savedAddresses.find((item) => item.key === key);
+    if (!saved) return;
+
+    const coords = {
+      lat: Number(saved.coords.lat),
+      lng: Number(saved.coords.lng),
+    };
+
+    setState("");
+    setAreaChoice("");
+    setCustomArea("");
+    setHouseStreet("");
+    setLandmark("");
+    setSuggestions([]);
+    setSelectedLocation({ address: saved.address, coords });
+    setLocationMethod("saved");
+    setError("");
+
+    onChange(saved.address);
+    onSelect({ address: saved.address, coords });
+    setShowSavedAddresses(false);
+
+
+  }
+
   function handleStateChange(nextState) {
     setState(nextState);
+    setAreaConfirmed(false);
     setAreaChoice("");
     setCustomArea("");
     setHouseStreet("");
@@ -128,6 +210,7 @@ export default function AddressLocationSection({
 
   function handleAreaChange(nextArea) {
     setAreaChoice(nextArea);
+    setAreaConfirmed(false);
     setCustomArea("");
     setHouseStreet("");
     setLandmark("");
@@ -139,6 +222,17 @@ export default function AddressLocationSection({
       houseStreet: "",
       landmark: ""
     });
+  }
+
+  function handleConfirmArea() {
+    if (!state || !area.trim()) return;
+    setAreaConfirmed(true);
+    setShowAreaSuggestions(false);
+    setAreaSuggestions([]);
+    setHouseStreet("");
+    setLandmark("");
+    clearLocation();
+    publishAddress({ houseStreet: "", landmark: "" });
   }
 
   function handleHouseStreetChange(nextValue) {
@@ -154,6 +248,7 @@ export default function AddressLocationSection({
 
   function handleCustomAreaChange(nextValue) {
     setCustomArea(nextValue);
+    setAreaConfirmed(false);
     setHouseStreet("");
     setLandmark("");
     clearLocation();
@@ -164,6 +259,78 @@ export default function AddressLocationSection({
       landmark: ""
     });
   }
+
+  useEffect(() => {
+    const query = customArea.trim();
+
+    if (!state || areaChoice !== "__custom__" || query.length < 2 || areaConfirmed) {
+      setAreaSuggestions([]);
+      setAreaSearching(false);
+      return undefined;
+    }
+
+    const localMatches = (AREAS[state] || [])
+      .filter((name) => name.toLowerCase().includes(query.toLowerCase()))
+      .filter((name) => name.toLowerCase() !== query.toLowerCase())
+      .map((name) => ({ name, detail: `${name}, ${state}` }));
+
+    setAreaSuggestions(localMatches.slice(0, 8));
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setAreaSearching(true);
+
+      try {
+        const params = new URLSearchParams({
+          q: `${query}, ${state}, Nigeria`,
+          format: "json",
+          limit: "8",
+          countrycodes: "ng",
+          addressdetails: "1"
+        });
+
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?${params}`,
+          {
+            signal: controller.signal,
+            headers: { Accept: "application/json" }
+          }
+        );
+
+        if (!response.ok) throw new Error("Area search unavailable");
+
+        const results = await response.json();
+        const remote = results.map((item) => {
+          const a = item.address || {};
+          const name = a.neighbourhood || a.suburb || a.city_district ||
+            a.town || a.city || a.village || a.municipality || item.name;
+          return name ? { name, detail: item.display_name } : null;
+        }).filter(Boolean);
+
+        if (!controller.signal.aborted) {
+          const unique = new Map();
+          [...localMatches, ...remote].forEach((item) => {
+            const key = item.name.toLowerCase();
+            if (key !== query.toLowerCase() && !unique.has(key)) {
+              unique.set(key, item);
+            }
+          });
+          setAreaSuggestions([...unique.values()].slice(0, 8));
+        }
+      } catch (err) {
+        if (err.name !== "AbortError" && !controller.signal.aborted) {
+          setAreaSuggestions(localMatches.slice(0, 8));
+        }
+      } finally {
+        if (!controller.signal.aborted) setAreaSearching(false);
+      }
+    }, 400);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [state, areaChoice, customArea, areaConfirmed]);
 
   useEffect(() => {
     if (!state || !area || !houseStreet.trim()) {
@@ -243,14 +410,14 @@ export default function AddressLocationSection({
       lng: suggestion.lng
     };
 
-    setSelectedLocation({ address: fullAddress, coords });
+    setSelectedLocation({ address: suggestion.address, coords });
     setLocationMethod("map-search");
     setSuggestions([]);
     setError("");
 
-    onChange(fullAddress);
+    onChange(suggestion.address);
     onSelect({
-      address: fullAddress,
+      address: suggestion.address,
       coords
     });
   }
@@ -333,9 +500,9 @@ export default function AddressLocationSection({
       return;
     }
 
-    onChange(fullAddress);
+    onChange(selectedLocation.address);
     onSelect({
-      address: fullAddress,
+      address: selectedLocation.address,
       coords: selectedLocation.coords
     });
 
@@ -349,6 +516,84 @@ export default function AddressLocationSection({
         <h3>{title}</h3>
       </div>
 
+      {savedAddresses.length > 0 && (
+        <div className="hokada-saved-address-picker">
+          <button
+            type="button"
+            className="hokada-saved-address-toggle"
+            aria-expanded={showSavedAddresses}
+            onClick={() => setShowSavedAddresses((open) => !open)}
+          >
+            <History size={18} aria-hidden="true" />
+            <span>
+              {selectedSavedAddress ? "Change saved address" : "Use previous address"}
+            </span>
+            <ChevronDown
+              size={18}
+              aria-hidden="true"
+              style={{
+                marginLeft: "auto",
+                transform: showSavedAddresses ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "transform 180ms ease"
+              }}
+            />
+          </button>
+
+          {showSavedAddresses && (
+            <div className="hokada-saved-address-list">
+              {savedAddresses.map((item) => (
+                <div className="hokada-saved-address-row" key={item.key}>
+                  <button
+                    type="button"
+                    className="hokada-saved-address-option"
+                    onClick={() => chooseSavedAddress(item.key)}
+                  >
+                    <MapPin size={17} aria-hidden="true" />
+                    <span>{item.address}</span>
+                    {selectedSavedAddress === item.key && (
+                      <CheckCircle2 size={18} aria-label="Selected" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="hokada-saved-address-delete"
+                    aria-label={`Delete saved address ${item.address}`}
+                    title="Delete saved address"
+                    onClick={() => onDeleteSavedAddress(item)}
+                  >
+                    <Trash2 size={17} aria-hidden="true" />
+                  </button>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                className="hokada-saved-address-new"
+                onClick={() => {
+                  chooseSavedAddress("");
+                  setShowSavedAddresses(false);
+                }}
+              >
+                Enter a new address
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {locationMethod === "saved" && selectedSavedAddress && (
+        <div className="hokada-selected-saved-address" aria-live="polite">
+          <MapPin size={18} aria-hidden="true" />
+          <div>
+            <strong>Selected address</strong>
+            <p>
+              {savedAddresses.find((item) => item.key === selectedSavedAddress)?.address || value}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {locationMethod !== "saved" && (
       <div className="hokada-address-fields">
         <label className="hokada-address-field">
           <span>1. State</span>
@@ -366,39 +611,117 @@ export default function AddressLocationSection({
           </select>
         </label>
 
-        {showArea && (
-          <label className="hokada-address-field">
-            <span>2. Area / Neighbourhood</span>
-            <select
-              value={areaChoice}
-              onChange={(event) => handleAreaChange(event.target.value)}
-            >
-              <option value="">Choose your area</option>
-              {(AREAS[state] || []).map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-              <option value="__custom__">
-                Can't find my area — type it
-              </option>
-            </select>
-          </label>
-        )}
-
-        {showArea && areaChoice === "__custom__" && (
-          <label className="hokada-address-field">
-            <span>Enter your area / neighbourhood</span>
+        {showArea && !areaConfirmed && (
+          <div className="hokada-address-field hokada-area-autocomplete">
+            <label htmlFor="hokada-area-input">
+              <span>2. Area / Neighbourhood</span>
+            </label>
             <input
+              id="hokada-area-input"
               type="text"
               value={customArea}
-              onChange={(event) =>
-                handleCustomAreaChange(event.target.value)
-              }
-              placeholder="e.g. Bakare, Ikotun"
+              onFocus={() => setShowAreaSuggestions(true)}
+              onChange={(event) => {
+                const typed = event.target.value;
+                setAreaChoice("__custom__");
+                setCustomArea(typed);
+                setAreaConfirmed(false);
+                setShowAreaSuggestions(true);
+                setHouseStreet("");
+                setLandmark("");
+                clearLocation();
+                publishAddress({
+                  areaChoice: "__custom__",
+                  customArea: typed,
+                  houseStreet: "",
+                  landmark: ""
+                });
+              }}
+              placeholder="Type your area, e.g. Ikotun or Bakare"
               autoComplete="address-level3"
             />
-          </label>
+
+            {showAreaSuggestions && customArea.trim().length >= 2 && (
+              <div className="hokada-place-suggestions hokada-area-suggestions">
+                <button
+                  type="button"
+                  className="hokada-place-suggestion"
+                  onClick={() => {
+                    setCustomArea(customArea.trim());
+                    setAreaChoice("__custom__");
+                    setShowAreaSuggestions(false);
+                    setAreaSuggestions([]);
+                  }}
+                >
+                  <MapPin size={16} aria-hidden="true" />
+                  <span>
+                    <strong>Use "{customArea.trim()}"</strong>
+                    <small>Keep the area exactly as you typed it</small>
+                  </span>
+                </button>
+
+                {areaSearching && (
+                  <p className="hokada-address-status">
+                    <LoaderCircle size={16} className="hokada-spin" />
+                    Looking for other matching areas...
+                  </p>
+                )}
+
+                {areaSuggestions.map((item) => (
+                  <button
+                    type="button"
+                    className="hokada-place-suggestion"
+                    key={item.name}
+                    onClick={() => {
+                      setCustomArea(item.name);
+                      setAreaChoice("__custom__");
+                      setShowAreaSuggestions(false);
+                      setAreaSuggestions([]);
+                      setHouseStreet("");
+                      setLandmark("");
+                      clearLocation();
+                      publishAddress({
+                        areaChoice: "__custom__",
+                        customArea: item.name,
+                        houseStreet: "",
+                        landmark: ""
+                      });
+                    }}
+                  >
+                    <MapPin size={16} aria-hidden="true" />
+                    <span>
+                      <strong>{item.name}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="hokada-address-status">
+              Choose a suggestion or keep your own entry. Selecting a
+              suggestion is optional.
+            </p>
+          </div>
+        )}
+
+        {areaConfirmed && area && (
+          <div className="hokada-confirmed-area" aria-live="polite">
+            <span>2. Confirmed area</span>
+            <strong>{area}, {state}</strong>
+            <button type="button" onClick={() => setAreaConfirmed(false)}>
+              Change area
+            </button>
+          </div>
+        )}
+
+        {showArea && area && !areaConfirmed && (
+          <button
+            type="button"
+            className="hokada-address-confirm"
+            onClick={handleConfirmArea}
+          >
+            Confirm area
+          </button>
         )}
 
         {showHouseStreet && (
@@ -430,8 +753,9 @@ export default function AddressLocationSection({
           </label>
         )}
       </div>
+      )}
 
-      {showHouseStreet && houseStreet.trim() && (
+      {locationMethod !== "saved" && showHouseStreet && houseStreet.trim() && (
         <div className="hokada-address-map-search">
           <div className="hokada-address-search-heading">
             <Search size={16} aria-hidden="true" />

@@ -46,3 +46,10 @@ backups/
 *.backup-*
 *.before-*
 *.step*.bak
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+server/.env
+server/.env.*

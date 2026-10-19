@@ -1,0 +1,282 @@
+import { useEffect, useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
+import L from "leaflet";
+import { MapPin, LocateFixed } from "lucide-react";
+import "leaflet/dist/leaflet.css";
+
+const DEFAULT_CENTER = [6.5523, 3.2683];
+
+const locationIcon = L.divIcon({
+  className: "hokada-address-pin",
+  html: '<div style="font-size:34px;line-height:38px;text-align:center;">📍</div>',
+  iconSize: [38, 38],
+  iconAnchor: [19, 36],
+});
+
+function MapUpdater({ position }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.invalidateSize();
+    map.setView(position, Math.max(map.getZoom(), 15));
+  }, [map, position]);
+
+  return null;
+}
+
+function MapClickHandler({ onMove }) {
+  useMapEvents({
+    click(event) {
+      onMove({
+        lat: event.latlng.lat,
+        lng: event.latlng.lng,
+      });
+    },
+  });
+
+  return null;
+}
+
+export default function AddressLocationSection({
+  title,
+  value,
+  coords,
+  onChange,
+  onSelect,
+}) {
+  const [house, setHouse] = useState("");
+  const [street, setStreet] = useState("");
+  const [busStop, setBusStop] = useState("");
+  const [landmark, setLandmark] = useState("");
+  const [area, setArea] = useState("");
+  const [state, setState] = useState("Lagos");
+
+  const [position, setPosition] = useState(
+    coords ? [coords.lat, coords.lng] : DEFAULT_CENTER
+  );
+
+  const [pinConfirmed, setPinConfirmed] = useState(Boolean(coords));
+
+  useEffect(() => {
+    if (coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)) {
+      setPosition([coords.lat, coords.lng]);
+      setPinConfirmed(true);
+    }
+  }, [coords?.lat, coords?.lng]);
+
+  function updateField(setter, nextValue) {
+    setter(nextValue);
+    setPinConfirmed(false);
+
+    const fields = {
+      house,
+      street,
+      busStop,
+      landmark,
+      area,
+      state,
+    };
+
+    if (setter === setHouse) fields.house = nextValue;
+    if (setter === setStreet) fields.street = nextValue;
+    if (setter === setBusStop) fields.busStop = nextValue;
+    if (setter === setLandmark) fields.landmark = nextValue;
+    if (setter === setArea) fields.area = nextValue;
+    if (setter === setState) fields.state = nextValue;
+
+    const address = [
+      fields.house,
+      fields.street,
+      fields.busStop && `Near ${fields.busStop}`,
+      fields.landmark && `Landmark: ${fields.landmark}`,
+      fields.area,
+      fields.state,
+      "Nigeria",
+    ].filter(Boolean).join(", ");
+
+    onChange(address);
+  }
+
+  function movePin(nextCoords) {
+    setPosition([nextCoords.lat, nextCoords.lng]);
+    setPinConfirmed(false);
+    onSelect({
+      address: value,
+      coords: nextCoords,
+    });
+  }
+
+  function confirmPin() {
+    const selectedCoords = {
+      lat: position[0],
+      lng: position[1],
+    };
+
+    setPinConfirmed(true);
+    onSelect({
+      address: value,
+      coords: selectedCoords,
+    });
+  }
+
+  function handleLocateMe() {
+    if (!navigator.geolocation) {
+      alert("Location is not supported by this browser. Please move the map pin manually.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (result) => {
+        const next = {
+          lat: result.coords.latitude,
+          lng: result.coords.longitude,
+        };
+
+        setPosition([next.lat, next.lng]);
+        setPinConfirmed(false);
+        onSelect({ address: value, coords: next });
+      },
+      () => {
+        alert("Could not get your location. Allow location access or move the map pin manually.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  return (
+    <section className="form-section hokada-address-section">
+      <label className="hokada-address-heading">{title}</label>
+      <p className="hokada-address-help">
+        Add as much detail as you can to help the rider find the exact location.
+      </p>
+
+      <div className="hokada-address-fields">
+        <label>
+          House / building number
+          <input
+            value={house}
+            onChange={(event) => updateField(setHouse, event.target.value)}
+            placeholder="e.g. No. 12, Block B"
+            autoComplete="address-line1"
+          />
+        </label>
+
+        <label>
+          Street address
+          <input
+            value={street}
+            onChange={(event) => updateField(setStreet, event.target.value)}
+            placeholder="e.g. Bakare Street"
+            autoComplete="address-line2"
+          />
+        </label>
+
+        <label>
+          Bus stop / nearest junction
+          <input
+            value={busStop}
+            onChange={(event) => updateField(setBusStop, event.target.value)}
+            placeholder="e.g. Ikotun Roundabout"
+          />
+        </label>
+
+        <label>
+          Popular place / landmark (optional)
+          <input
+            value={landmark}
+            onChange={(event) => updateField(setLandmark, event.target.value)}
+            placeholder="e.g. Near a market or filling station"
+          />
+        </label>
+
+        <label>
+          Area / neighbourhood
+          <input
+            value={area}
+            onChange={(event) => updateField(setArea, event.target.value)}
+            placeholder="e.g. Ikotun, Igando, Ikoyi"
+            autoComplete="address-level3"
+          />
+        </label>
+
+        <label>
+          State
+          <select
+            value={state}
+            onChange={(event) => updateField(setState, event.target.value)}
+          >
+            <option value="Lagos">Lagos</option>
+            <option value="Ogun">Ogun</option>
+            <option value="Oyo">Oyo</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="hokada-address-summary">
+        <strong>Full address</strong>
+        <p>{value || "Your completed address will appear here."}</p>
+      </div>
+
+      <div className="hokada-map-heading">
+        <div>
+          <strong>Confirm exact location</strong>
+          <p>Drag the pin or tap the map to move it.</p>
+        </div>
+
+        <button
+          type="button"
+          className="hokada-map-locate"
+          onClick={handleLocateMe}
+        >
+          <LocateFixed size={16} />
+          My location
+        </button>
+      </div>
+
+      <div className="hokada-address-map">
+        <MapContainer
+          center={position}
+          zoom={15}
+          scrollWheelZoom={false}
+          style={{ height: 280, width: "100%" }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          <MapUpdater position={position} />
+          <MapClickHandler onMove={movePin} />
+
+          <Marker
+            position={position}
+            icon={locationIcon}
+            draggable
+            eventHandlers={{
+              dragend(event) {
+                const point = event.target.getLatLng();
+                movePin({ lat: point.lat, lng: point.lng });
+              },
+            }}
+          />
+        </MapContainer>
+      </div>
+
+      <button
+        type="button"
+        className="hokada-confirm-pin"
+        onClick={confirmPin}
+      >
+        <MapPin size={17} />
+        {pinConfirmed ? "Location confirmed" : "Confirm this map location"}
+      </button>
+    </section>
+  );
+}

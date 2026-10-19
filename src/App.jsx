@@ -204,6 +204,10 @@ function mapDeliveryHistory(delivery) {
     },
     createdAt: delivery.created_at,
     riderName: delivery.rider_name,
+    pickupLat: delivery.pickup_lat,
+    pickupLng: delivery.pickup_lng,
+    dropoffLat: delivery.dropoff_lat,
+    dropoffLng: delivery.dropoff_lng,
   };
 }
 
@@ -448,6 +452,9 @@ function App() {
   const [currentBooking, setCurrentBooking] = useState(null);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
+  const [serverQuote, setServerQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState("");
   const [isMatching, setIsMatching] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [assignedRider, setAssignedRider] = useState(null);
@@ -511,7 +518,7 @@ function App() {
     async function loadCustomerDeliveries() {
       const { data, error } = await supabase
         .from("deliveries")
-        .select("id, pickup_address, dropoff_address, delivery_type, package_type, recipient_name, recipient_phone, notes, status, delivery_fee, payment_status, created_at, rider_name")
+        .select("id, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, delivery_type, package_type, recipient_name, recipient_phone, notes, status, delivery_fee, payment_status, created_at, rider_name")
         .eq("customer_id", customerUser.id)
         .order("created_at", {
           ascending: false,
@@ -540,7 +547,7 @@ function App() {
    * =========================================================
    */
 
-  const pricing = useMemo(
+  const estimatedPricing = useMemo(
     () =>
       calculateDeliveryFee(
         booking.pickup,
@@ -550,6 +557,73 @@ function App() {
       ),
     [booking.pickup, booking.dropoff, booking.packageSize, booking.deliveryType]
   );
+
+  const pricing = serverQuote?.pricing || null;
+
+  useEffect(() => {
+    let active = true;
+
+    setServerQuote(null);
+    setQuoteError("");
+
+    const pickup = booking.pickupCoords;
+    const dropoff = booking.dropoffCoords;
+
+    if (!pickup || !dropoff) {
+      setQuoteLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    async function loadQuote() {
+      setQuoteLoading(true);
+
+      try {
+        const result = await paymentApiRequest("/api/delivery-quote", {
+          method: "POST",
+          body: JSON.stringify({
+            pickup_lat: Number(pickup.lat),
+            pickup_lng: Number(pickup.lng),
+            dropoff_lat: Number(dropoff.lat),
+            dropoff_lng: Number(dropoff.lng),
+            package_type: booking.packageSize,
+            delivery_type: booking.deliveryType,
+          }),
+        });
+
+        if (active) {
+          setServerQuote({
+            ...result,
+            pricing: {
+              ...result.pricing,
+              distance: result.pricing.distanceKm,
+            },
+          });
+        }
+      } catch (error) {
+        if (active) {
+          setQuoteError(
+            error?.message || "Could not calculate the road-route price."
+          );
+        }
+      } finally {
+        if (active) setQuoteLoading(false);
+      }
+    }
+
+    loadQuote();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    booking.pickupCoords,
+    booking.dropoffCoords,
+    booking.packageSize,
+    booking.deliveryType,
+    customerUser?.id,
+  ]);
 
   /*
    * =========================================================
@@ -689,6 +763,31 @@ function App() {
       return;
     }
 
+    const digits = booking.recipientPhone.replace(/\D/g, "");
+    const localPhone = digits.startsWith("234")
+      ? `0${digits.slice(3)}`
+      : digits;
+
+    if (!/^0[789]\d{9}$/.test(localPhone)) {
+      alert("Enter a valid Nigerian mobile number, for example 08012345678.");
+      return;
+    }
+
+    if (!booking.pickupCoords || !booking.dropoffCoords) {
+      alert("Please confirm both pickup and drop-off locations using map search or GPS.");
+      return;
+    }
+
+    if (quoteLoading) {
+      alert("Please wait while HOKADA calculates the road-route price.");
+      return;
+    }
+
+    if (!serverQuote?.pricing) {
+      alert(quoteError || "HOKADA could not confirm the road-route price. Please try selecting your locations again.");
+      return;
+    }
+
     setPage("review");
   }
 
@@ -716,8 +815,12 @@ function App() {
       setAssignedRider(null);
       setIsMatching(false);
 
-      const pickupCoords = booking.pickupCoords || await geocodeAddress(booking.pickup.trim());
-      const dropoffCoords = booking.dropoffCoords || await geocodeAddress(booking.dropoff.trim());
+      const pickupCoords = booking.pickupCoords;
+      const dropoffCoords = booking.dropoffCoords;
+
+      if (!pickupCoords || !dropoffCoords || !serverQuote?.pricing) {
+        throw new Error("Please confirm both locations and wait for the road-route quote before booking.");
+      }
 
       const { delivery } = await paymentApiRequest("/api/deliveries", {
         method: "POST",
@@ -743,7 +846,10 @@ function App() {
       const newBooking = {
         id: delivery.id,
         ...booking,
-        pricing,
+        pricing: {
+          ...serverQuote.pricing,
+          total: Number(delivery.delivery_fee),
+        },
         status: "searching",
         createdAt: delivery.created_at,
         delivery: {
@@ -1115,6 +1221,7 @@ function App() {
           <BookingPage
             booking={booking}
             updateBooking={updateBooking}
+            deliveries={deliveries}
             pricing={pricing}
             onBack={goHome}
             onContinue={handleContinueToReview}
@@ -1335,7 +1442,102 @@ function HomePage({ onBook, onDeliveries, onProfile }) {
  * =========================================================
  */
 
-function BookingPage({ booking, updateBooking, pricing, onBack, onContinue }) {
+function BookingPage({ booking, updateBooking, deliveries = [], pricing, quoteLoading, quoteError, onBack, onContinue }) {
+  function scrollToBookingSection(labelText) {
+    window.requestAnimationFrame(() => {
+      const target = Array.from(
+        document.querySelectorAll(".form-section label")
+      ).find(
+        (label) =>
+          label.textContent.trim().toLowerCase() ===
+          labelText.toLowerCase()
+      );
+
+      target?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }
+  const [hiddenSavedAddresses, setHiddenSavedAddresses] = useState(() => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("hokada-hidden-saved-addresses-v1") || "[]"
+      );
+    } catch {
+      return [];
+    }
+  });
+
+  function deleteSavedAddress(item) {
+    const confirmed = window.confirm(
+      `Remove this saved address from your list?\n\n${item.address}\n\nYour delivery history will not be deleted.`
+    );
+    if (!confirmed) return;
+
+    const next = [...new Set([...hiddenSavedAddresses, item.key])];
+    setHiddenSavedAddresses(next);
+
+    try {
+      localStorage.setItem(
+        "hokada-hidden-saved-addresses-v1",
+        JSON.stringify(next)
+      );
+    } catch (error) {
+      console.error("Could not save hidden addresses:", error);
+      alert("The address could not be hidden permanently in this browser.");
+    }
+  }
+
+  const savedAddresses = [];
+  const seenAddresses = new Set();
+
+  deliveries.forEach((delivery) => {
+    [
+      {
+        address: delivery.pickup,
+        lat: delivery.pickupLat,
+        lng: delivery.pickupLng,
+      },
+      {
+        address: delivery.dropoff,
+        lat: delivery.dropoffLat,
+        lng: delivery.dropoffLng,
+      },
+    ].forEach((item) => {
+      const address = String(item.address || "").trim();
+      const lat = Number(item.lat);
+      const lng = Number(item.lng);
+      const key = address.toLowerCase();
+
+      if (
+        address &&
+        item.lat !== null &&
+        item.lat !== undefined &&
+        item.lng !== null &&
+        item.lng !== undefined &&
+        Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180 &&
+        !seenAddresses.has(key)
+      ) {
+        seenAddresses.add(key);
+        savedAddresses.push({
+          key,
+          address,
+          coords: { lat, lng },
+        });
+      }
+    });
+  });
+
+  const visibleSavedAddresses = savedAddresses.filter(
+    (item) => !hiddenSavedAddresses.includes(item.key)
+  );
+
   return (
     <div className="page">
       <PageHeader
@@ -1349,6 +1551,8 @@ function BookingPage({ booking, updateBooking, pricing, onBack, onContinue }) {
           title="Pickup address"
           value={booking.pickup}
           coords={booking.pickupCoords}
+          savedAddresses={visibleSavedAddresses}
+          onDeleteSavedAddress={deleteSavedAddress}
           onChange={(value) => updateBooking("pickup", value)}
           onSelect={({ address, coords }) => {
             if (address && address !== booking.pickup) {
@@ -1362,6 +1566,8 @@ function BookingPage({ booking, updateBooking, pricing, onBack, onContinue }) {
           title="Drop-off address"
           value={booking.dropoff}
           coords={booking.dropoffCoords}
+          savedAddresses={visibleSavedAddresses}
+          onDeleteSavedAddress={deleteSavedAddress}
           onChange={(value) => updateBooking("dropoff", value)}
           onSelect={({ address, coords }) => {
             if (address && address !== booking.dropoff) {
@@ -1400,8 +1606,11 @@ function BookingPage({ booking, updateBooking, pricing, onBack, onContinue }) {
               onChange={(event) =>
                 updateBooking("recipientPhone", event.target.value)
               }
-              placeholder="080..."
+              placeholder="08012345678"
               type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              maxLength={14}
             />
           </div>
         </div>
@@ -1419,7 +1628,10 @@ function BookingPage({ booking, updateBooking, pricing, onBack, onContinue }) {
                 className={`choice-button ${
                   booking.packageSize === size ? "active" : ""
                 }`}
-                onClick={() => updateBooking("packageSize", size)}
+                onClick={() => {
+                  updateBooking("packageSize", size);
+                  scrollToBookingSection("Delivery speed");
+                }}
               >
                 <Package size={19} />
                 <span>{size}</span>
@@ -1443,7 +1655,10 @@ function BookingPage({ booking, updateBooking, pricing, onBack, onContinue }) {
               className={`delivery-type-card ${
                 booking.deliveryType === "Standard" ? "active" : ""
               }`}
-              onClick={() => updateBooking("deliveryType", "Standard")}
+              onClick={() => {
+                updateBooking("deliveryType", "Standard");
+                scrollToBookingSection("Delivery notes");
+              }}
             >
               <div className="delivery-type-icon">
                 <Clock3 size={20} />
@@ -1462,7 +1677,10 @@ function BookingPage({ booking, updateBooking, pricing, onBack, onContinue }) {
               className={`delivery-type-card ${
                 booking.deliveryType === "Express" ? "active" : ""
               }`}
-              onClick={() => updateBooking("deliveryType", "Express")}
+              onClick={() => {
+                updateBooking("deliveryType", "Express");
+                scrollToBookingSection("Delivery notes");
+              }}
             >
               <div className="delivery-type-icon express">
                 <Zap size={20} />
@@ -1490,16 +1708,36 @@ function BookingPage({ booking, updateBooking, pricing, onBack, onContinue }) {
         </div>
       </section>
 
-      <section className="live-price-card">
+      <section className="live-price-card" aria-live="polite">
         <div>
-          <span>Estimated delivery fee</span>
-          <strong>{formatNaira(pricing.total)}</strong>
+          <span>Delivery fee</span>
+          <strong>
+            {quoteLoading
+              ? "Calculating..."
+              : pricing
+                ? formatNaira(pricing.total)
+                : "Select both locations"}
+          </strong>
         </div>
 
-        <div className="live-price-distance">
-          <MapPin size={15} />
-          {pricing.distance} km estimated
-        </div>
+        {pricing && !quoteLoading && (
+          <div className="live-price-distance">
+            <MapPin size={15} />
+            {pricing.distance} km by road
+          </div>
+        )}
+
+        {!pricing && !quoteLoading && (
+          <p className="live-price-hint">
+            Confirm your pickup and drop-off locations to see your delivery fee.
+          </p>
+        )}
+
+        {!pricing && quoteError && (
+          <p className="live-price-hint live-price-error">
+            {quoteError}
+          </p>
+        )}
       </section>
 
       <button

@@ -366,46 +366,120 @@ app.use(express.json({ limit: "32kb" }));
 
 // Server-owned delivery pricing. Keep these estimates aligned with the
 // current customer-facing pricing rules in src/App.jsx.
-function estimateServerDeliveryDistance(pickup, dropoff) {
-  const locationText = `${pickup} ${dropoff}`.toLowerCase();
+async function calculateServerDeliveryFee(
+  pickupLat,
+  pickupLng,
+  dropoffLat,
+  dropoffLng,
+  packageType,
+  deliveryType
+) {
+  const coordinates =
+    `${pickupLng},${pickupLat};${dropoffLng},${dropoffLat}`;
 
-  const knownRoutes = [
-    { keywords: ["ikeja", "yaba"], distance: 12 },
-    { keywords: ["ikeja", "lekki"], distance: 24 },
-    { keywords: ["ikeja", "ajah"], distance: 28 },
-    { keywords: ["yaba", "lekki"], distance: 17 },
-    { keywords: ["yaba", "ajah"], distance: 21 },
-    { keywords: ["lekki", "ajah"], distance: 14 },
-    { keywords: ["lekki", "victoria island"], distance: 9 },
-    { keywords: ["ikeja", "victoria island"], distance: 20 },
-    { keywords: ["surulere", "ikeja"], distance: 11 },
-    { keywords: ["surulere", "yaba"], distance: 8 },
-    { keywords: ["surulere", "lekki"], distance: 19 },
-  ];
+  const routingUrl =
+    `https://router.project-osrm.org/route/v1/driving/${coordinates}` +
+    "?overview=false&alternatives=false&steps=false";
 
-  const matchedRoute = knownRoutes.find(
-    (route) =>
-      locationText.includes(route.keywords[0]) &&
-      locationText.includes(route.keywords[1])
-  );
+  const response = await fetch(routingUrl, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(15000),
+  });
 
-  if (matchedRoute) return matchedRoute.distance;
+  if (!response.ok) {
+    throw new Error("Road routing service is unavailable.");
+  }
 
-  const combinedLength = pickup.length + dropoff.length;
-  return Math.max(5, Math.min(Math.round(combinedLength / 3), 30));
-}
+  const result = await response.json();
+  const route = result.routes?.[0];
 
-function calculateServerDeliveryFee(pickup, dropoff, packageType, deliveryType) {
+  if (
+    result.code !== "Ok" ||
+    !route ||
+    !Number.isFinite(route.distance) ||
+    route.distance <= 0 ||
+    !Number.isFinite(route.duration)
+  ) {
+    throw new Error("Could not calculate a road route for these addresses.");
+  }
+
+  const distanceKm = route.distance / 1000;
+  const durationMinutes = Math.ceil(route.duration / 60);
   const packageFees = { Small: 0, Medium: 300, Large: 700 };
-  const distance = estimateServerDeliveryDistance(pickup, dropoff);
 
-  return (
-    800 +
-    distance * 150 +
-    packageFees[packageType] +
-    (deliveryType === "Express" ? 500 : 0)
-  );
+  const baseFee = 800;
+  const distanceFee = Math.round(distanceKm * 150);
+  const packageFee = packageFees[packageType];
+  const expressFee = deliveryType === "Express" ? 500 : 0;
+
+  return {
+    distanceKm: Math.round(distanceKm * 10) / 10,
+    durationMinutes,
+    baseFee,
+    distanceFee,
+    packageFee,
+    expressFee,
+    total: baseFee + distanceFee + packageFee + expressFee,
+  };
 }
+
+// Calculate a customer-facing quote without creating a delivery.
+app.post("/api/delivery-quote", requireCustomer, async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    const {
+      pickup_lat,
+      pickup_lng,
+      dropoff_lat,
+      dropoff_lng,
+      package_type,
+      delivery_type,
+    } = body;
+
+    const validCoordinate = (value, min, max) =>
+      typeof value === "number" &&
+      Number.isFinite(value) &&
+      value >= min &&
+      value <= max;
+
+    if (
+      !validCoordinate(pickup_lat, -90, 90) ||
+      !validCoordinate(dropoff_lat, -90, 90) ||
+      !validCoordinate(pickup_lng, -180, 180) ||
+      !validCoordinate(dropoff_lng, -180, 180)
+    ) {
+      return res.status(400).json({
+        error: "Select valid pickup and drop-off addresses before requesting a quote.",
+      });
+    }
+
+    if (
+      !["Small", "Medium", "Large"].includes(package_type) ||
+      !["Standard", "Express"].includes(delivery_type)
+    ) {
+      return res.status(400).json({
+        error: "Select a valid package size and delivery speed.",
+      });
+    }
+
+    const pricing = await calculateServerDeliveryFee(
+      pickup_lat,
+      pickup_lng,
+      dropoff_lat,
+      dropoff_lng,
+      package_type,
+      delivery_type
+    );
+
+    return res.json({ pricing });
+  } catch (error) {
+    console.error("Delivery quote failed:", error.message);
+
+    return res.status(503).json({
+      error: "We could not calculate the road route right now. Please try again.",
+    });
+  }
+});
 
 // Create deliveries through the authenticated backend instead of allowing
 // the browser to choose the saved price, payment state, rider, or earnings.
@@ -437,6 +511,15 @@ app.post("/api/deliveries", requireCustomer, async (req, res) => {
       value.trim().length > 0 &&
       value.trim().length <= maxLength;
 
+    const normalizeNigerianPhone = (value) => {
+      const digits = String(value ?? "").replace(/\D/g, "");
+      const local = digits.startsWith("234")
+        ? `0${digits.slice(3)}`
+        : digits;
+
+      return /^0[789]\d{9}$/.test(local) ? local : null;
+    };
+
     if (
       !isText(pickup_address, 500) ||
       !isText(dropoff_address, 500) ||
@@ -445,6 +528,14 @@ app.post("/api/deliveries", requireCustomer, async (req, res) => {
     ) {
       return res.status(400).json({
         error: "Enter valid pickup, drop-off, recipient name, and phone details.",
+      });
+    }
+
+    const normalizedPhone = normalizeNigerianPhone(recipient_phone);
+
+    if (!normalizedPhone) {
+      return res.status(400).json({
+        error: "Enter a valid Nigerian phone number, such as 08012345678.",
       });
     }
 
@@ -491,12 +582,16 @@ app.post("/api/deliveries", requireCustomer, async (req, res) => {
       });
     }
 
-    const deliveryFee = calculateServerDeliveryFee(
-      pickup_address.trim(),
-      dropoff_address.trim(),
+    const routePricing = await calculateServerDeliveryFee(
+      pickup_lat,
+      pickup_lng,
+      dropoff_lat,
+      dropoff_lng,
       package_type,
       delivery_type
     );
+
+    const deliveryFee = routePricing.total;
 
     const payload = {
       customer_id: req.customer.id,
@@ -511,7 +606,7 @@ app.post("/api/deliveries", requireCustomer, async (req, res) => {
       dropoff_lng,
 
       recipient_name: recipient_name.trim(),
-      recipient_phone: recipient_phone.trim(),
+      recipient_phone: normalizedPhone,
 
       package_type,
       package_description: `${package_type} package`,
@@ -539,7 +634,13 @@ app.post("/api/deliveries", requireCustomer, async (req, res) => {
 
     if (error) throw error;
 
-    return res.status(201).json({ delivery });
+    return res.status(201).json({
+      delivery,
+      route: {
+        distanceKm: routePricing.distanceKm,
+        durationMinutes: routePricing.durationMinutes,
+      },
+    });
   } catch (error) {
     console.error("Delivery creation failed:", error.message);
     return res.status(500).json({

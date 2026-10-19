@@ -1,0 +1,6612 @@
+/* =========================================================
+   HOKADA — GLOBAL STYLES
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  color: #101410;
+  background: #f4f7f4;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  min-height: 100%;
+  background: #f4f7f4;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: radial-gradient(
+      circle at 15% 5%,
+      rgba(25, 184, 90, 0.1),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 90% 20%,
+      rgba(140, 255, 114, 0.08),
+      transparent 25%
+    ),
+    #f4f7f4;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(25, 184, 90, 0.2);
+  outline-offset: 2px;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* =========================================================
+   APP SHELL
+========================================================= */
+
+.app-shell {
+  min-height: 100vh;
+  padding-bottom: 92px;
+}
+
+.main-content {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.page {
+  width: min(100% - 40px, 1080px);
+  margin: 0 auto;
+  padding: 42px 0 70px;
+}
+
+/* =========================================================
+   TOPBAR
+========================================================= */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  width: 100%;
+  height: 76px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 max(24px, calc((100vw - 1180px) / 2));
+
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  border-bottom: 1px solid rgba(16, 20, 16, 0.07);
+}
+
+.brand-button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  padding: 0;
+  background: transparent;
+  color: #101410;
+}
+
+.brand-icon {
+  width: 43px;
+  height: 43px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: #101410;
+  color: #8cff72;
+
+  box-shadow: 0 8px 22px rgba(16, 20, 16, 0.15),
+    inset 0 0 0 1px rgba(140, 255, 114, 0.12);
+
+  transform: rotate(-3deg);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.brand-button:hover .brand-icon {
+  transform: rotate(3deg) translateY(-2px);
+  box-shadow: 0 12px 28px rgba(16, 20, 16, 0.2),
+    0 0 25px rgba(25, 184, 90, 0.15);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+.brand-text span {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+}
+
+.brand-text small {
+  margin-top: 5px;
+
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+
+  color: #707870;
+}
+
+.profile-button {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+  color: #101410;
+
+  border: 1px solid rgba(16, 20, 16, 0.08);
+
+  box-shadow: 0 7px 22px rgba(16, 20, 16, 0.07);
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(16, 20, 16, 0.12);
+}
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero-section {
+  padding: 55px 0 35px;
+}
+
+.hero-badge {
+  width: fit-content;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 8px 12px;
+
+  border-radius: 999px;
+
+  background: rgba(25, 184, 90, 0.08);
+  color: #168746;
+
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+  background: #19b85a;
+
+  box-shadow: 0 0 0 5px rgba(25, 184, 90, 0.1);
+
+  animation: livePulse 1.8s infinite;
+}
+
+.hero-section h1 {
+  max-width: 800px;
+
+  margin: 20px 0 12px;
+
+  font-size: clamp(50px, 7vw, 88px);
+  line-height: 0.94;
+  letter-spacing: -4px;
+  font-weight: 950;
+
+  color: #101410;
+}
+
+.hero-section h1 span {
+  background: linear-gradient(100deg, #19b85a, #8cff72);
+
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-section p {
+  max-width: 540px;
+
+  margin: 0;
+
+  font-size: 17px;
+  line-height: 1.6;
+
+  color: #687068;
+}
+
+/* =========================================================
+   BOOKING CARD
+========================================================= */
+
+.booking-card {
+  position: relative;
+
+  overflow: hidden;
+
+  padding: 30px;
+
+  border-radius: 30px;
+
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.98),
+    rgba(247, 250, 247, 0.96)
+  );
+
+  border: 1px solid rgba(16, 20, 16, 0.08);
+
+  box-shadow: 0 24px 70px rgba(16, 20, 16, 0.08),
+    0 2px 10px rgba(16, 20, 16, 0.04);
+}
+
+.booking-card::before {
+  content: "";
+
+  position: absolute;
+
+  width: 240px;
+  height: 240px;
+
+  top: -130px;
+  right: -90px;
+
+  border-radius: 50%;
+
+  background: rgba(140, 255, 114, 0.14);
+
+  filter: blur(4px);
+}
+
+.booking-card-header {
+  position: relative;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #19a850;
+
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+}
+
+.booking-card-header h2 {
+  margin: 0;
+
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -1px;
+}
+
+.booking-card-icon {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 15px;
+
+  background: #101410;
+  color: #8cff72;
+
+  box-shadow: 0 10px 24px rgba(16, 20, 16, 0.15);
+}
+
+/* =========================================================
+   LOCATIONS
+========================================================= */
+
+.location-stack {
+  position: relative;
+
+  padding: 4px 0 12px;
+}
+
+.location-input {
+  position: relative;
+  z-index: 2;
+
+  min-height: 72px;
+
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  padding: 14px 17px;
+
+  border: 1px solid rgba(16, 20, 16, 0.08);
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.location-input:hover {
+  border-color: rgba(25, 184, 90, 0.25);
+
+  box-shadow: 0 8px 25px rgba(16, 20, 16, 0.05);
+
+  transform: translateY(-1px);
+}
+
+.location-dot {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+}
+
+.pickup-dot {
+  background: rgba(25, 184, 90, 0.11);
+  color: #19a850;
+}
+
+.dropoff-dot {
+  background: rgba(16, 20, 16, 0.07);
+  color: #101410;
+}
+
+.location-input > div:last-child {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.location-input small {
+  margin-bottom: 3px;
+
+  color: #8a918a;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.location-input strong {
+  overflow: hidden;
+
+  color: #202520;
+
+  font-size: 14px;
+  font-weight: 750;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-line {
+  width: 1px;
+  height: 24px;
+
+  margin: -1px 0 -1px 35px;
+
+  border-left: 2px dashed rgba(25, 184, 90, 0.3);
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.primary-button,
+.secondary-button {
+  min-height: 54px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  padding: 0 20px;
+
+  border-radius: 16px;
+
+  font-size: 14px;
+  font-weight: 850;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #19b85a, #11a74e);
+
+  color: #ffffff;
+
+  box-shadow: 0 12px 25px rgba(25, 184, 90, 0.2);
+}
+
+.primary-button:hover {
+  transform: translateY(-2px);
+
+  box-shadow: 0 17px 32px rgba(25, 184, 90, 0.28);
+}
+
+.primary-button:active,
+.secondary-button:active {
+  transform: translateY(0);
+}
+
+.secondary-button {
+  background: #ffffff;
+  color: #101410;
+
+  border: 1px solid rgba(16, 20, 16, 0.1);
+}
+
+.secondary-button:hover {
+  transform: translateY(-2px);
+
+  box-shadow: 0 10px 25px rgba(16, 20, 16, 0.08);
+}
+
+.full-width {
+  width: 100%;
+}
+
+.booking-card .primary-button {
+  margin-top: 13px;
+}
+
+/* =========================================================
+   QUICK ACTIONS
+========================================================= */
+
+.quick-section {
+  padding: 45px 0;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 16px;
+}
+
+.section-heading h3 {
+  margin: 0;
+
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.quick-card {
+  min-height: 80px;
+
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  padding: 15px 17px;
+
+  text-align: left;
+
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.85);
+  color: #101410;
+
+  border: 1px solid rgba(16, 20, 16, 0.07);
+
+  box-shadow: 0 8px 25px rgba(16, 20, 16, 0.04);
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quick-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow: 0 14px 30px rgba(16, 20, 16, 0.08);
+}
+
+.quick-card > span {
+  flex: 1;
+
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.quick-icon {
+  width: 43px;
+  height: 43px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: rgba(25, 184, 90, 0.09);
+  color: #19a850;
+}
+
+/* =========================================================
+   PROMO CARD
+========================================================= */
+
+.promo-card {
+  position: relative;
+
+  min-height: 260px;
+
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+
+  padding: 32px;
+
+  border-radius: 28px;
+
+  background: radial-gradient(
+      circle at 80% 35%,
+      rgba(140, 255, 114, 0.18),
+      transparent 25%
+    ),
+    #101410;
+
+  color: #ffffff;
+
+  box-shadow: 0 25px 65px rgba(16, 20, 16, 0.15);
+}
+
+.promo-content {
+  position: relative;
+  z-index: 2;
+
+  max-width: 500px;
+}
+
+.promo-label {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
+  color: #8cff72;
+}
+
+.promo-card h3 {
+  margin: 10px 0 10px;
+
+  font-size: clamp(31px, 4vw, 47px);
+  line-height: 0.98;
+  letter-spacing: -2px;
+}
+
+.promo-card h3 span {
+  color: #8cff72;
+}
+
+.promo-card p {
+  max-width: 430px;
+
+  margin: 0 0 20px;
+
+  color: rgba(255, 255, 255, 0.66);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.promo-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 12px 16px;
+
+  border-radius: 13px;
+
+  background: #8cff72;
+  color: #101410;
+
+  font-size: 13px;
+  font-weight: 900;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.promo-button:hover {
+  transform: translateY(-2px);
+
+  box-shadow: 0 10px 25px rgba(140, 255, 114, 0.18);
+}
+
+.promo-bike {
+  position: absolute;
+
+  right: 8%;
+  bottom: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: rgba(140, 255, 114, 0.13);
+
+  transform: rotate(-8deg);
+}
+
+/* =========================================================
+   PAGE HEADER
+========================================================= */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  margin-bottom: 30px;
+}
+
+.back-button {
+  width: 45px;
+  height: 45px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: #ffffff;
+  color: #101410;
+
+  border: 1px solid rgba(16, 20, 16, 0.08);
+
+  box-shadow: 0 7px 20px rgba(16, 20, 16, 0.05);
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.back-button:hover {
+  transform: translateX(-2px);
+
+  box-shadow: 0 10px 25px rgba(16, 20, 16, 0.09);
+}
+
+.page-header h1 {
+  margin: 0 0 5px;
+
+  font-size: 32px;
+  letter-spacing: -1.3px;
+}
+
+.page-header p {
+  margin: 0;
+
+  color: #747b74;
+
+  font-size: 14px;
+}
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.form-card {
+  margin-bottom: 18px;
+
+  padding: 25px;
+
+  border-radius: 24px;
+
+  background: rgba(255, 255, 255, 0.9);
+
+  border: 1px solid rgba(16, 20, 16, 0.07);
+
+  box-shadow: 0 15px 45px rgba(16, 20, 16, 0.05);
+}
+
+.form-section {
+  margin-bottom: 22px;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+.form-section > label {
+  display: block;
+
+  margin-bottom: 9px;
+
+  color: #454b45;
+
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.input-with-icon {
+  height: 56px;
+
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  padding: 0 16px;
+
+  border-radius: 15px;
+
+  background: #f6f8f6;
+
+  border: 1px solid transparent;
+
+  color: #19a850;
+
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-with-icon:focus-within {
+  background: #ffffff;
+
+  border-color: rgba(25, 184, 90, 0.4);
+
+  box-shadow: 0 0 0 4px rgba(25, 184, 90, 0.07);
+}
+
+.input-with-icon input {
+  width: 100%;
+
+  min-width: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+  color: #101410;
+
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.input-with-icon input::placeholder {
+  color: #9ba19b;
+  font-weight: 500;
+}
+
+.form-divider {
+  height: 1px;
+
+  margin: 25px 0;
+
+  background: rgba(16, 20, 16, 0.07);
+}
+
+textarea {
+  width: 100%;
+
+  resize: vertical;
+
+  padding: 15px;
+
+  border-radius: 15px;
+
+  border: 1px solid transparent;
+
+  outline: 0;
+
+  background: #f6f8f6;
+  color: #101410;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+textarea:focus {
+  background: #ffffff;
+
+  border-color: rgba(25, 184, 90, 0.4);
+
+  box-shadow: 0 0 0 4px rgba(25, 184, 90, 0.07);
+}
+
+textarea::placeholder {
+  color: #9ba19b;
+}
+
+/* =========================================================
+   PACKAGE CHOICES
+========================================================= */
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.choice-button {
+  min-height: 112px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+
+  padding: 14px;
+
+  border-radius: 16px;
+
+  background: #f6f8f6;
+  color: #252a25;
+
+  border: 1px solid transparent;
+
+  text-align: left;
+
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.choice-button:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+
+  border-color: rgba(25, 184, 90, 0.18);
+}
+
+.choice-button.active {
+  background: rgba(25, 184, 90, 0.08);
+
+  border-color: #19b85a;
+
+  color: #137d40;
+
+  box-shadow: 0 7px 20px rgba(25, 184, 90, 0.08);
+}
+
+.choice-button span {
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.choice-button small {
+  color: #858c85;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.choice-button.active small {
+  color: #168746;
+}
+
+/* =========================================================
+   DELIVERY TYPE
+========================================================= */
+
+.delivery-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 11px;
+}
+
+.delivery-type-card {
+  min-height: 82px;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+
+  padding: 13px;
+
+  border-radius: 17px;
+
+  background: #f6f8f6;
+  color: #202520;
+
+  border: 1px solid transparent;
+
+  text-align: left;
+
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.delivery-type-card:hover {
+  transform: translateY(-2px);
+
+  background: #ffffff;
+  border-color: rgba(25, 184, 90, 0.18);
+}
+
+.delivery-type-card.active {
+  background: rgba(25, 184, 90, 0.08);
+
+  border-color: #19b85a;
+}
+
+.delivery-type-icon {
+  width: 39px;
+  height: 39px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #ffffff;
+  color: #19a850;
+}
+
+.delivery-type-icon.express {
+  background: #101410;
+  color: #8cff72;
+}
+
+.delivery-type-card > div:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.delivery-type-card strong {
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.delivery-type-card span {
+  color: #858c85;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.delivery-type-card > small {
+  color: #19a850;
+
+  font-size: 10px;
+  font-weight: 850;
+}
+
+/* =========================================================
+   LIVE PRICE
+========================================================= */
+
+.live-price-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  margin-top: 20px;
+  margin-bottom: 16px;
+
+  padding: 18px 20px;
+
+  border-radius: 19px;
+
+  background: #101410;
+  color: #ffffff;
+
+  box-shadow: 0 14px 35px rgba(16, 20, 16, 0.13);
+}
+
+.live-price-card > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.live-price-card span {
+  color: rgba(255, 255, 255, 0.58);
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.live-price-card strong {
+  color: #8cff72;
+
+  font-size: 22px;
+  letter-spacing: -0.7px;
+}
+
+.live-price-distance {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  color: rgba(255, 255, 255, 0.75);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.bottom-action {
+  margin-top: 3px;
+}
+
+/* =========================================================
+   REVIEW
+========================================================= */
+
+.review-card {
+  margin-bottom: 17px;
+
+  padding: 23px;
+
+  border-radius: 23px;
+
+  background: rgba(255, 255, 255, 0.92);
+
+  border: 1px solid rgba(16, 20, 16, 0.07);
+
+  box-shadow: 0 12px 35px rgba(16, 20, 16, 0.045);
+}
+
+.review-route {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-location {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.review-location > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  min-width: 0;
+}
+
+.review-location small {
+  color: #858c85;
+
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.review-location strong {
+  overflow: hidden;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  text-overflow: ellipsis;
+}
+
+.review-dot {
+  width: 12px;
+  height: 12px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+}
+
+.review-dot.pickup {
+  background: #19b85a;
+
+  box-shadow: 0 0 0 6px rgba(25, 184, 90, 0.09);
+}
+
+.review-dot.dropoff {
+  background: #101410;
+
+  box-shadow: 0 0 0 6px rgba(16, 20, 16, 0.07);
+}
+
+.review-route-line {
+  height: 31px;
+
+  margin-left: 5px;
+
+  border-left: 2px dashed rgba(25, 184, 90, 0.25);
+}
+
+.review-row {
+  min-height: 47px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+
+  border-bottom: 1px solid rgba(16, 20, 16, 0.06);
+}
+
+.review-row:last-child {
+  border-bottom: 0;
+}
+
+.review-row span {
+  color: #818981;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.review-row strong {
+  text-align: right;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.green-text {
+  color: #159047;
+}
+
+/* =========================================================
+   PRICE BREAKDOWN
+========================================================= */
+
+.price-breakdown-card {
+  margin-bottom: 18px;
+
+  padding: 25px;
+
+  border-radius: 24px;
+
+  background: linear-gradient(145deg, #ffffff, #f7faf7);
+
+  border: 1px solid rgba(16, 20, 16, 0.07);
+
+  box-shadow: 0 15px 45px rgba(16, 20, 16, 0.055);
+}
+
+.price-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 18px;
+
+  color: #19a850;
+}
+
+.price-card-heading h3 {
+  margin: 0;
+
+  color: #101410;
+
+  font-size: 20px;
+  letter-spacing: -0.6px;
+}
+
+.price-line {
+  min-height: 43px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  border-bottom: 1px solid rgba(16, 20, 16, 0.055);
+}
+
+.price-line span {
+  color: #777e77;
+
+  font-size: 12px;
+}
+
+.price-line strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.price-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-top: 18px;
+}
+
+.price-total span {
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.price-total strong {
+  color: #19a850;
+
+  font-size: 25px;
+  letter-spacing: -0.8px;
+}
+
+.price-note {
+  margin: 17px 0 0;
+
+  color: #8a918a;
+
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   MATCHING
+========================================================= */
+
+.centered-page {
+  min-height: calc(100vh - 168px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+}
+
+.matching-animation {
+  position: relative;
+
+  width: 180px;
+  height: 180px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 35px;
+}
+
+.matching-icon {
+  position: relative;
+  z-index: 3;
+
+  width: 85px;
+  height: 85px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 28px;
+
+  background: #101410;
+  color: #8cff72;
+
+  box-shadow: 0 18px 45px rgba(16, 20, 16, 0.17),
+    0 0 40px rgba(25, 184, 90, 0.12);
+
+  animation: bikeFloat 2.2s ease-in-out infinite;
+}
+
+.matching-ring {
+  position: absolute;
+
+  border: 1px solid rgba(25, 184, 90, 0.22);
+
+  border-radius: 50%;
+
+  animation: matchingPulse 2.2s ease-out infinite;
+}
+
+.ring-one {
+  width: 115px;
+  height: 115px;
+}
+
+.ring-two {
+  width: 170px;
+  height: 170px;
+
+  animation-delay: 0.6s;
+}
+
+.matching-title {
+  margin: 8px 0 13px;
+
+  font-size: clamp(31px, 5vw, 48px);
+  line-height: 1;
+  letter-spacing: -2px;
+}
+
+.matching-text {
+  max-width: 450px;
+
+  margin: 0;
+
+  color: #747b74;
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.matching-summary {
+  width: min(100%, 440px);
+
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+
+  margin: 30px 0 20px;
+
+  padding: 17px;
+
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(16, 20, 16, 0.07);
+}
+
+.matching-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.matching-summary > div + div {
+  border-left: 1px solid rgba(16, 20, 16, 0.07);
+}
+
+.matching-summary span {
+  color: #8a918a;
+
+  font-size: 10px;
+}
+
+.matching-summary strong {
+  font-size: 15px;
+}
+
+/* =========================================================
+   SUCCESS / TRACKING
+========================================================= */
+
+.success-banner {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  margin-bottom: 18px;
+
+  padding: 16px 18px;
+
+  border-radius: 19px;
+
+  background: rgba(25, 184, 90, 0.09);
+
+  border: 1px solid rgba(25, 184, 90, 0.13);
+}
+
+.success-icon {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background: #19b85a;
+  color: #ffffff;
+}
+
+.success-banner > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.success-banner strong {
+  font-size: 14px;
+}
+
+.success-banner span {
+  color: #6c756c;
+
+  font-size: 11px;
+}
+
+.tracking-card {
+  margin-bottom: 18px;
+
+  padding: 25px;
+
+  border-radius: 25px;
+
+  background: #101410;
+  color: #ffffff;
+
+  box-shadow: 0 20px 50px rgba(16, 20, 16, 0.15);
+}
+
+.tracking-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 30px;
+}
+
+.tracking-header .eyebrow {
+  color: #8cff72;
+}
+
+.tracking-header h2 {
+  margin: 0;
+
+  font-size: 24px;
+  letter-spacing: -0.8px;
+}
+
+.status-pill {
+  padding: 7px 10px;
+
+  border-radius: 999px;
+
+  background: rgba(140, 255, 114, 0.1);
+  color: #8cff72;
+
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.tracking-route {
+  display: flex;
+  flex-direction: column;
+}
+
+.tracking-point {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.tracking-point > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tracking-point small {
+  color: rgba(255, 255, 255, 0.45);
+
+  font-size: 10px;
+}
+
+.tracking-point strong {
+  color: #ffffff;
+
+  font-size: 13px;
+}
+
+.tracking-dot {
+  width: 12px;
+  height: 12px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.tracking-dot.active {
+  background: #8cff72;
+
+  box-shadow: 0 0 0 6px rgba(140, 255, 114, 0.1);
+}
+
+.tracking-line {
+  height: 34px;
+
+  margin-left: 5px;
+
+  border-left: 2px dashed rgba(140, 255, 114, 0.3);
+}
+
+.rider-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  margin-bottom: 18px;
+
+  padding: 18px;
+
+  border-radius: 21px;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(16, 20, 16, 0.07);
+
+  box-shadow: 0 12px 35px rgba(16, 20, 16, 0.05);
+}
+
+.rider-avatar {
+  width: 55px;
+  height: 55px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 17px;
+
+  background: #101410;
+  color: #8cff72;
+}
+
+.rider-info {
+  flex: 1;
+
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rider-info > span {
+  color: #8a918a;
+
+  font-size: 10px;
+}
+
+.rider-info strong {
+  font-size: 15px;
+}
+
+.rider-info small {
+  color: #727972;
+
+  font-size: 10px;
+}
+
+.call-button {
+  width: 43px;
+  height: 43px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background: rgba(25, 184, 90, 0.1);
+  color: #19a850;
+}
+
+.tracking-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+}
+
+/* =========================================================
+   DELIVERIES
+========================================================= */
+
+.empty-card {
+  padding: 55px 30px;
+
+  text-align: center;
+
+  border-radius: 25px;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(16, 20, 16, 0.07);
+
+  box-shadow: 0 15px 45px rgba(16, 20, 16, 0.05);
+}
+
+.empty-icon {
+  width: 70px;
+  height: 70px;
+
+  margin: 0 auto 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 23px;
+
+  background: rgba(25, 184, 90, 0.09);
+  color: #19a850;
+}
+
+.empty-card h3 {
+  margin: 0 0 7px;
+
+  font-size: 20px;
+}
+
+.empty-card p {
+  max-width: 360px;
+
+  margin: 0 auto 22px;
+
+  color: #7a827a;
+
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.booking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.delivery-item {
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+  min-height: 91px;
+
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  padding: 14px;
+
+  border-radius: 19px;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(16, 20, 16, 0.07);
+
+  box-shadow: 0 8px 25px rgba(16, 20, 16, 0.04);
+}
+
+.delivery-icon {
+  width: 45px;
+  height: 45px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: rgba(25, 184, 90, 0.09);
+  color: #19a850;
+}
+
+.delivery-info {
+  flex: 1;
+
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.delivery-info strong,
+.delivery-info span {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delivery-info strong {
+  font-size: 12px;
+}
+
+.delivery-info span {
+  color: #777e77;
+
+  font-size: 11px;
+}
+
+.delivery-info small {
+  color: #19a850;
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.delivery-price {
+  flex-shrink: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.delivery-price strong {
+  font-size: 12px;
+}
+
+.delivery-price span {
+  color: #19a850;
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  margin-bottom: 18px;
+
+  padding: 25px;
+
+  border-radius: 25px;
+
+  background: linear-gradient(135deg, #101410, #192219);
+
+  color: #ffffff;
+
+  box-shadow: 0 18px 45px rgba(16, 20, 16, 0.14);
+}
+
+.profile-large {
+  width: 72px;
+  height: 72px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 22px;
+
+  background: #8cff72;
+  color: #101410;
+}
+
+.profile-hero .eyebrow {
+  color: #8cff72;
+}
+
+.profile-hero h2 {
+  margin: 0 0 5px;
+
+  font-size: 23px;
+  letter-spacing: -0.7px;
+}
+
+.profile-hero p {
+  margin: 0;
+
+  color: rgba(255, 255, 255, 0.55);
+
+  font-size: 11px;
+}
+
+.profile-menu {
+  overflow: hidden;
+
+  border-radius: 23px;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(16, 20, 16, 0.07);
+
+  box-shadow: 0 12px 35px rgba(16, 20, 16, 0.045);
+}
+
+.profile-menu-item {
+  width: 100%;
+
+  min-height: 78px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 14px 18px;
+
+  background: #ffffff;
+  color: #101410;
+
+  text-align: left;
+
+  border-bottom: 1px solid rgba(16, 20, 16, 0.06);
+}
+
+.profile-menu-item:last-child {
+  border-bottom: 0;
+}
+
+.profile-menu-item > svg:first-child {
+  color: #19a850;
+}
+
+.profile-menu-item > div {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-menu-item strong {
+  font-size: 13px;
+}
+
+.profile-menu-item span {
+  color: #858c85;
+
+  font-size: 10px;
+}
+
+/* =========================================================
+   BOTTOM NAV
+========================================================= */
+
+.bottom-nav {
+  position: fixed;
+
+  z-index: 100;
+
+  left: 50%;
+  bottom: 15px;
+
+  width: min(calc(100% - 28px), 510px);
+
+  transform: translateX(-50%);
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+
+  padding: 8px;
+
+  border-radius: 23px;
+
+  background: rgba(16, 20, 16, 0.94);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  box-shadow: 0 20px 50px rgba(16, 20, 16, 0.22),
+    0 2px 12px rgba(16, 20, 16, 0.1);
+}
+
+.bottom-nav button {
+  min-height: 55px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  border-radius: 17px;
+
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.bottom-nav button:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.bottom-nav button.active {
+  background: #8cff72;
+  color: #101410;
+
+  box-shadow: 0 7px 20px rgba(140, 255, 114, 0.12);
+}
+
+.bottom-nav span {
+  font-size: 9px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   ANIMATIONS
+========================================================= */
+
+@keyframes livePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(25, 184, 90, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(25, 184, 90, 0.03);
+  }
+}
+
+@keyframes bikeFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+
+  50% {
+    transform: translateY(-7px) rotate(2deg);
+  }
+}
+
+@keyframes matchingPulse {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.75);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (min-width: 700px) {
+  .page {
+    padding-top: 55px;
+  }
+
+  .form-card {
+    padding: 30px;
+  }
+
+  .booking-card {
+    padding: 38px;
+  }
+
+  .hero-section {
+    padding-top: 70px;
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 699px) {
+  .topbar {
+    height: 68px;
+
+    padding: 0 17px;
+  }
+
+  .brand-icon {
+    width: 39px;
+    height: 39px;
+  }
+
+  .brand-text span {
+    font-size: 18px;
+  }
+
+  .brand-text small {
+    font-size: 6px;
+  }
+
+  .profile-button {
+    width: 39px;
+    height: 39px;
+  }
+
+  .page {
+    width: min(100% - 28px, 1080px);
+
+    padding-top: 30px;
+  }
+
+  .hero-section {
+    padding: 30px 0 25px;
+  }
+
+  .hero-section h1 {
+    font-size: clamp(47px, 15vw, 68px);
+    letter-spacing: -3px;
+  }
+
+  .hero-section p {
+    font-size: 14px;
+  }
+
+  .booking-card {
+    padding: 20px;
+
+    border-radius: 24px;
+  }
+
+  .booking-card-header h2 {
+    font-size: 21px;
+  }
+
+  .quick-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-section {
+    padding: 32px 0;
+  }
+
+  .promo-card {
+    min-height: 300px;
+
+    padding: 25px;
+  }
+
+  .promo-bike {
+    right: 6%;
+    bottom: 22px;
+  }
+
+  .promo-bike svg {
+    width: 70px;
+    height: 70px;
+  }
+
+  .page-header {
+    align-items: flex-start;
+  }
+
+  .page-header h1 {
+    font-size: 27px;
+  }
+
+  .form-card {
+    padding: 18px;
+
+    border-radius: 21px;
+  }
+
+  .choice-grid {
+    gap: 7px;
+  }
+
+  .choice-button {
+    min-height: 100px;
+
+    padding: 11px;
+  }
+
+  .choice-button span {
+    font-size: 12px;
+  }
+
+  .choice-button small {
+    font-size: 9px;
+  }
+
+  .delivery-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .live-price-card {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 8px;
+  }
+
+  .review-card,
+  .price-breakdown-card {
+    padding: 18px;
+  }
+
+  .matching-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .matching-summary > div + div {
+    padding-top: 13px;
+
+    border-left: 0;
+    border-top: 1px solid rgba(16, 20, 16, 0.07);
+  }
+
+  .tracking-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-hero {
+    align-items: flex-start;
+
+    padding: 20px;
+  }
+
+  .profile-large {
+    width: 60px;
+    height: 60px;
+  }
+
+  .delivery-item {
+    align-items: flex-start;
+  }
+
+  .delivery-price {
+    margin-left: auto;
+  }
+
+  .bottom-nav {
+    bottom: 10px;
+
+    width: calc(100% - 20px);
+  }
+}
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 400px) {
+  .page {
+    width: calc(100% - 22px);
+  }
+
+  .hero-section h1 {
+    font-size: 44px;
+  }
+
+  .booking-card {
+    padding: 17px;
+  }
+
+  .booking-card-header {
+    gap: 10px;
+  }
+
+  .booking-card-icon {
+    width: 43px;
+    height: 43px;
+  }
+
+  .location-input {
+    min-height: 65px;
+
+    padding: 11px;
+  }
+
+  .location-input strong {
+    font-size: 12px;
+  }
+
+  .choice-button {
+    min-height: 95px;
+  }
+
+  .price-total strong {
+    font-size: 22px;
+  }
+}
+/* =========================================================
+   HOKADA LIVE TRACKING MAP
+   ========================================================= */
+
+.hokada-tracking-map-shell {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(25, 184, 90, 0.14);
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 22px 60px rgba(8, 25, 15, 0.08);
+}
+
+.hokada-map-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #edf2ee;
+}
+
+.hokada-map-status-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hokada-map-status-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #19b85a;
+  background: rgba(25, 184, 90, 0.1);
+}
+
+.hokada-map-status-left strong {
+  display: block;
+  color: #07110a;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.hokada-map-status-left span {
+  display: block;
+  margin-top: 3px;
+  color: #718077;
+  font-size: 12px;
+}
+
+.hokada-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.hokada-live-badge.is-live {
+  color: #08752f;
+  background: #e8f9ee;
+}
+
+.hokada-live-badge.is-demo {
+  color: #8a6510;
+  background: #fff6d8;
+}
+
+.hokada-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.hokada-map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 430px;
+}
+
+.hokada-map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.hokada-map .leaflet-control-attribution {
+  font-size: 9px;
+}
+
+.hokada-map-floating-card {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(12px);
+}
+
+.hokada-map-rider-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hokada-map-rider-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #07110a;
+  font-size: 20px;
+}
+
+.hokada-map-rider-mini strong {
+  display: block;
+  color: #07110a;
+  font-size: 13px;
+}
+
+.hokada-map-rider-mini span {
+  display: block;
+  margin-top: 3px;
+  color: #78837d;
+  font-size: 10px;
+}
+
+.hokada-map-arrival {
+  text-align: right;
+}
+
+.hokada-map-arrival strong {
+  display: block;
+  color: #19b85a;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.hokada-map-arrival span {
+  display: block;
+  margin-top: 4px;
+  color: #7a847e;
+  font-size: 10px;
+}
+
+.hokada-map-location-button {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  z-index: 500;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  color: #07110a;
+  background: #ffffff;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+}
+
+.hokada-map-location-button:hover {
+  transform: translateY(-2px);
+}
+
+.hokada-rider-marker-wrapper,
+.hokada-map-marker-wrapper {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.hokada-rider-marker {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+}
+
+.hokada-rider-icon {
+  position: relative;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: #19b85a;
+  box-shadow: 0 6px 20px rgba(25, 184, 90, 0.4);
+  font-size: 21px;
+}
+
+.hokada-rider-pulse {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: rgba(25, 184, 90, 0.2);
+  animation: hokadaRiderPulse 1.8s infinite;
+}
+
+@keyframes hokadaRiderPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.hokada-location-marker {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #ffffff;
+  border-radius: 50% 50% 50% 5px;
+  transform: rotate(-45deg);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.18);
+}
+
+.hokada-location-marker span {
+  transform: rotate(45deg);
+  font-size: 18px;
+}
+
+.pickup-marker {
+  background: #19b85a;
+}
+
+.dropoff-marker {
+  background: #07110a;
+}
+
+.hokada-map-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid #edf2ee;
+}
+
+.hokada-map-info-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 16px 18px;
+  border-right: 1px solid #edf2ee;
+}
+
+.hokada-map-info-item:last-child {
+  border-right: 0;
+}
+
+.hokada-map-info-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #19b85a;
+  background: #eefaf2;
+}
+
+.hokada-map-info-item span {
+  display: block;
+  color: #87918b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.hokada-map-info-item strong {
+  display: block;
+  margin-top: 3px;
+  color: #07110a;
+  font-size: 12px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+.hokada-map-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-top: 1px solid #edf2ee;
+  color: #7b857f;
+  font-size: 10px;
+}
+
+.hokada-map-footer > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.hokada-footer-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #19b85a;
+}
+
+.hokada-secure-location {
+  color: #19b85a;
+  font-weight: 700;
+}
+
+/* =========================================================
+     RIDER GPS PANEL
+     ========================================================= */
+
+.hokada-rider-gps-card {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #e7eee9;
+  border-radius: 20px;
+  background: #ffffff;
+}
+
+.hokada-rider-gps-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.hokada-rider-gps-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.hokada-rider-gps-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #19b85a;
+  background: #ecfaf1;
+}
+
+.hokada-rider-gps-title strong {
+  display: block;
+  color: #07110a;
+  font-size: 13px;
+}
+
+.hokada-rider-gps-title span {
+  display: block;
+  margin-top: 3px;
+  color: #87918b;
+  font-size: 10px;
+}
+
+.hokada-gps-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.hokada-gps-status.connected {
+  color: #08752f;
+  background: #e8f9ee;
+}
+
+.hokada-gps-status.waiting {
+  color: #8a6510;
+  background: #fff6d8;
+}
+
+.hokada-gps-status.error,
+.hokada-gps-status.offline {
+  color: #a83232;
+  background: #fff0f0;
+}
+
+.hokada-gps-status span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.hokada-gps-active,
+.hokada-gps-error {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 11px 12px;
+  border-radius: 13px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.hokada-gps-active {
+  color: #08752f;
+  background: #edf9f1;
+}
+
+.hokada-gps-error {
+  color: #9c3030;
+  background: #fff1f1;
+}
+
+.hokada-gps-coordinates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.hokada-gps-coordinates span {
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: #657169;
+  background: #f5f7f5;
+  font-size: 9px;
+  font-family: monospace;
+}
+
+/* =========================================================
+     MOBILE MAP
+     ========================================================= */
+
+@media (max-width: 700px) {
+  .hokada-map-wrapper {
+    height: 380px;
+  }
+
+  .hokada-map-status-bar {
+    padding: 15px;
+  }
+
+  .hokada-map-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hokada-map-info-item {
+    border-right: 0;
+    border-bottom: 1px solid #edf2ee;
+  }
+
+  .hokada-map-info-item:last-child {
+    border-bottom: 0;
+  }
+
+  .hokada-map-floating-card {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .hokada-map-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hokada-rider-gps-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+/* =========================================================
+   HOKADA MOBILE TRACKING UI
+   ========================================================= */
+
+.tracking-status-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.tracking-status-icon {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #eaf8ef;
+  color: #159447;
+}
+
+.tracking-status-text {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tracking-status-text strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #172019;
+}
+
+.tracking-status-text span {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #7a847d;
+}
+
+.live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: #eefaf2;
+  color: #159447;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.live-dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #19b85a;
+  box-shadow: 0 0 0 3px rgba(25, 184, 90, 0.12);
+}
+
+/* Route */
+
+.route-card {
+  margin-top: 12px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.route-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.route-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.route-icon.pickup {
+  background: #eef8f1;
+  color: #159447;
+}
+
+.route-icon.dropoff {
+  background: #f3f4f3;
+  color: #59625d;
+}
+
+.route-row > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.route-row span {
+  font-size: 10px;
+  font-weight: 600;
+  color: #89918c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.route-row strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 650;
+  color: #1b241e;
+}
+
+.route-line {
+  width: 1px;
+  height: 18px;
+  margin: 2px 0 2px 18px;
+  border-left: 1px dashed #cbd2cd;
+}
+
+/* Rider */
+
+.rider-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #e8ece9;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.rider-avatar {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #172019;
+  color: #ffffff;
+}
+
+.rider-details {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rider-details span {
+  font-size: 10px;
+  color: #89918c;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rider-details strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: #172019;
+  font-weight: 700;
+}
+
+.rider-details small {
+  font-size: 11px;
+  color: #7a847d;
+}
+
+.call-rider-button {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #19b85a;
+  color: #ffffff;
+  text-decoration: none;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.call-rider-button:active {
+  transform: scale(0.94);
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+  .tracking-status-card {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .tracking-status-icon {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 10px;
+  }
+
+  .tracking-status-text strong {
+    font-size: 13px;
+  }
+
+  .tracking-status-text span {
+    font-size: 11px;
+  }
+
+  .live-dot {
+    padding: 5px 7px;
+    font-size: 8px;
+  }
+
+  .route-card {
+    margin-top: 10px;
+    padding: 13px;
+    border-radius: 14px;
+  }
+
+  .route-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .route-row strong {
+    font-size: 12px;
+  }
+
+  .rider-card {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .rider-avatar {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+
+  .rider-details strong {
+    font-size: 13px;
+  }
+
+  .call-rider-button {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+}
+
+/* Very small phones */
+
+@media (max-width: 380px) {
+  .tracking-status-text span {
+    display: none;
+  }
+
+  .tracking-status-card {
+    padding: 10px;
+  }
+
+  .route-card,
+  .rider-card {
+    padding: 11px;
+  }
+
+  .rider-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+}
+/* =========================================================
+   HOKADA RIDER APP
+   ========================================================= */
+
+.rider-app {
+  min-height: 100vh;
+  background: #f4f7f5;
+  color: #111814;
+}
+
+.rider-header {
+  width: 100%;
+  min-height: 76px;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e4e9e5;
+  box-sizing: border-box;
+}
+
+.rider-brand {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: #111814;
+}
+
+.rider-brand span {
+  color: #19b85a;
+  margin-left: 5px;
+}
+
+.rider-subtitle {
+  margin-top: 3px;
+  color: #758079;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rider-online-toggle {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.rider-online-toggle.online {
+  background: #e9f9ef;
+  color: #168844;
+}
+
+.rider-online-toggle.offline {
+  background: #eef1ef;
+  color: #69736d;
+}
+
+.rider-online-toggle:hover {
+  transform: translateY(-1px);
+}
+
+.rider-content {
+  width: min(100% - 32px, 760px);
+  margin: 0 auto;
+  padding: 28px 0 50px;
+}
+
+.rider-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #e4e9e5;
+  border-radius: 20px;
+  box-shadow: 0 6px 22px rgba(20, 35, 25, 0.05);
+}
+
+.rider-profile-avatar {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8f8ee;
+  color: #19a653;
+}
+
+.rider-profile-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.rider-profile-info span {
+  display: block;
+  margin-bottom: 2px;
+  color: #7a847e;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.rider-profile-info strong {
+  display: block;
+  color: #111814;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.rider-profile-info small {
+  display: block;
+  margin-top: 4px;
+  color: #737d77;
+  font-size: 12px;
+}
+
+.rider-rating {
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: #fff8df;
+  color: #9a7210;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rider-message {
+  margin-top: 16px;
+  padding: 13px 15px;
+  border-radius: 13px;
+  background: #fff1f1;
+  border: 1px solid #f2d4d4;
+  color: #a33b3b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rider-section-heading {
+  margin: 30px 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.rider-eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: #19a653;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+}
+
+.rider-section-heading h1 {
+  margin: 0;
+  color: #111814;
+  font-size: 25px;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+
+.rider-refresh-button {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border: 1px solid #dfe5e1;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #26312b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rider-refresh-button:hover {
+  background: #f1f5f2;
+}
+
+.rider-refresh-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.rider-spin {
+  animation: riderSpin 0.9s linear infinite;
+}
+
+@keyframes riderSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+     AVAILABLE DELIVERY
+     ========================================================= */
+
+.rider-job-card {
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #dce5df;
+  border-radius: 22px;
+  box-shadow: 0 8px 28px rgba(20, 35, 25, 0.07);
+}
+
+.rider-job-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #edf0ee;
+}
+
+.rider-job-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 15px;
+  background: #e9f9ef;
+  color: #19a653;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rider-job-header span {
+  display: block;
+  color: #19a653;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.9px;
+}
+
+.rider-job-header strong {
+  display: block;
+  margin-top: 4px;
+  color: #151c18;
+  font-size: 15px;
+}
+
+.rider-job-route {
+  padding: 21px 0;
+}
+
+.rider-route {
+  padding: 21px 0;
+}
+
+.rider-route-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rider-route-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rider-route-icon.pickup {
+  background: #eaf8ef;
+  color: #19a653;
+}
+
+.rider-route-icon.dropoff {
+  background: #f1efff;
+  color: #6656c7;
+}
+
+.rider-route-item span {
+  display: block;
+  margin-bottom: 3px;
+  color: #858e88;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.rider-route-item strong {
+  display: block;
+  color: #1a211d;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.rider-route-line {
+  width: 1px;
+  height: 25px;
+  margin: 4px 0 4px 18px;
+  background: #d9e1dc;
+}
+
+.rider-job-customer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 13px;
+  border-radius: 13px;
+  background: #f6f8f6;
+  color: #59645d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rider-job-customer svg {
+  color: #19a653;
+}
+
+.rider-job-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.rider-decline-button,
+.rider-accept-button,
+.rider-primary-button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.rider-decline-button {
+  background: #f2f4f2;
+  color: #69736d;
+}
+
+.rider-decline-button:hover {
+  background: #e9ecea;
+}
+
+.rider-accept-button,
+.rider-primary-button {
+  background: #19b85a;
+  color: #ffffff;
+  box-shadow: 0 7px 18px rgba(25, 184, 90, 0.2);
+}
+
+.rider-accept-button:hover,
+.rider-primary-button:hover {
+  background: #159d4d;
+  transform: translateY(-1px);
+}
+
+.rider-accept-button:disabled,
+.rider-primary-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+/* =========================================================
+     ACTIVE DELIVERY
+     ========================================================= */
+
+.rider-active-card {
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #dce5df;
+  border-radius: 22px;
+  box-shadow: 0 8px 28px rgba(20, 35, 25, 0.07);
+}
+
+.rider-active-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rider-active-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #19a653;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.9px;
+}
+
+.rider-status-pill {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #eaf8ef;
+  color: #188c49;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.rider-delivery-id {
+  margin-top: 12px;
+  color: #68736c;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.rider-customer {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 4px;
+  padding-top: 17px;
+  border-top: 1px solid #edf0ee;
+}
+
+.rider-customer-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #f0f3f1;
+  color: #59645d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rider-customer > div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+
+.rider-customer span {
+  display: block;
+  color: #858e88;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.rider-customer strong {
+  display: block;
+  margin-top: 2px;
+  color: #1b221e;
+  font-size: 13px;
+}
+
+.rider-call-button {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #e9f9ef;
+  color: #19a653;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+/* =========================================================
+     RIDER ACTION CARD
+     ========================================================= */
+
+.rider-action-card {
+  margin-top: 14px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e4e9e5;
+  border-radius: 19px;
+}
+
+.rider-action-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #e9f9ef;
+  color: #19a653;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rider-action-text {
+  min-width: 0;
+}
+
+.rider-action-text strong {
+  display: block;
+  color: #161d18;
+  font-size: 14px;
+}
+
+.rider-action-text span {
+  display: block;
+  margin-top: 4px;
+  color: #747e78;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.rider-action-card .rider-primary-button {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+/* =========================================================
+     GPS CARD
+     ========================================================= */
+
+.hokada-rider-gps-card {
+  margin-top: 14px;
+  padding: 17px;
+  background: #101613;
+  color: #ffffff;
+  border-radius: 19px;
+  box-shadow: 0 8px 24px rgba(10, 18, 13, 0.12);
+}
+
+.hokada-rider-gps-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hokada-rider-gps-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.hokada-rider-gps-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: rgba(25, 184, 90, 0.15);
+  color: #5be58c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hokada-rider-gps-title strong {
+  display: block;
+  font-size: 13px;
+}
+
+.hokada-rider-gps-title span {
+  display: block;
+  margin-top: 3px;
+  color: #8d9992;
+  font-size: 10px;
+}
+
+.hokada-gps-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.hokada-gps-status.connected {
+  background: rgba(25, 184, 90, 0.14);
+  color: #67eb96;
+}
+
+.hokada-gps-status.waiting {
+  background: rgba(255, 193, 7, 0.12);
+  color: #ffd45d;
+}
+
+.hokada-gps-status.error,
+.hokada-gps-status.offline {
+  background: rgba(255, 90, 90, 0.12);
+  color: #ff8d8d;
+}
+
+.hokada-gps-status span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.hokada-gps-active {
+  margin-top: 13px;
+  padding: 10px 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #c6cec9;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.hokada-gps-active svg {
+  flex-shrink: 0;
+  color: #5be58c;
+}
+
+.hokada-gps-error {
+  margin-top: 13px;
+  padding: 10px 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-radius: 11px;
+  background: rgba(255, 90, 90, 0.08);
+  color: #ffaaaa;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.hokada-gps-coordinates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.hokada-gps-coordinates span {
+  padding: 5px 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #aeb8b1;
+  font-size: 9px;
+  font-family: monospace;
+}
+
+/* =========================================================
+     EMPTY STATE
+     ========================================================= */
+
+.rider-empty-card {
+  min-height: 260px;
+  padding: 30px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 9px;
+  background: #ffffff;
+  border: 1px solid #e4e9e5;
+  border-radius: 22px;
+  color: #737e77;
+}
+
+.rider-empty-card svg {
+  color: #19a653;
+  margin-bottom: 4px;
+}
+
+.rider-empty-card strong {
+  color: #1a211d;
+  font-size: 15px;
+}
+
+.rider-empty-card span {
+  max-width: 340px;
+  color: #7c857f;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rider-empty-card .rider-primary-button {
+  margin-top: 10px;
+  padding: 0 18px;
+}
+
+/* =========================================================
+     BOTTOM STATS
+     ========================================================= */
+
+.rider-bottom-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.rider-bottom-info > div {
+  padding: 15px 12px;
+  background: #ffffff;
+  border: 1px solid #e4e9e5;
+  border-radius: 15px;
+}
+
+.rider-bottom-info span {
+  display: block;
+  color: #7b857f;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.rider-bottom-info strong {
+  display: block;
+  margin-top: 6px;
+  color: #151c18;
+  font-size: 16px;
+}
+
+/* =========================================================
+     MOBILE
+     ========================================================= */
+
+@media (max-width: 600px) {
+  .rider-header {
+    min-height: 68px;
+    padding: 15px 16px;
+  }
+
+  .rider-brand {
+    font-size: 18px;
+  }
+
+  .rider-subtitle {
+    font-size: 10px;
+  }
+
+  .rider-online-toggle {
+    padding: 9px 11px;
+    font-size: 11px;
+  }
+
+  .rider-content {
+    width: min(100% - 24px, 760px);
+    padding-top: 18px;
+  }
+
+  .rider-profile-card {
+    padding: 14px;
+    border-radius: 17px;
+  }
+
+  .rider-profile-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+  }
+
+  .rider-profile-info strong {
+    font-size: 14px;
+  }
+
+  .rider-profile-info small {
+    font-size: 10px;
+  }
+
+  .rider-rating {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .rider-section-heading {
+    margin-top: 24px;
+  }
+
+  .rider-section-heading h1 {
+    font-size: 21px;
+  }
+
+  .rider-job-card,
+  .rider-active-card {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .rider-job-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .rider-bottom-info {
+    gap: 7px;
+  }
+
+  .rider-bottom-info > div {
+    padding: 12px 9px;
+  }
+
+  .rider-bottom-info span {
+    font-size: 9px;
+  }
+
+  .rider-bottom-info strong {
+    font-size: 14px;
+  }
+
+  .hokada-rider-gps-card {
+    padding: 14px;
+    border-radius: 17px;
+  }
+
+  .hokada-rider-gps-header {
+    align-items: flex-start;
+  }
+
+  .hokada-gps-status {
+    padding: 5px 7px;
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .rider-profile-card {
+    gap: 9px;
+  }
+
+  .rider-profile-avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .rider-rating {
+    display: none;
+  }
+
+  .rider-section-heading h1 {
+    font-size: 19px;
+  }
+
+  .rider-action-card {
+    grid-template-columns: 42px 1fr;
+    padding: 14px;
+  }
+
+  .rider-action-icon {
+    width: 42px;
+    height: 42px;
+  }
+}
+/* =========================================================
+   HOKADA RIDER - PICKUP JOURNEY
+========================================================= */
+
+.rider-pickup-section {
+  margin-top: 18px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #f4fff8, #ffffff);
+  border: 1px solid #ccebd8;
+  box-shadow: 0 12px 35px rgba(25, 184, 90, 0.08);
+}
+
+.rider-pickup-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #dcefe3;
+}
+
+.rider-pickup-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #19b85a;
+  color: white;
+  flex-shrink: 0;
+}
+
+.rider-pickup-header span {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #159447;
+  margin-bottom: 4px;
+}
+
+.rider-pickup-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #10251a;
+}
+
+.rider-pickup-route {
+  margin-top: 20px;
+  padding: 17px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e1f0e6;
+}
+
+.rider-pickup-destination {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.rider-pickup-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9f9ef;
+  color: #19a952;
+  flex-shrink: 0;
+}
+
+.rider-pickup-destination span {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #789083;
+  margin-bottom: 4px;
+}
+
+.rider-pickup-destination strong {
+  display: block;
+  color: #17271e;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.rider-pickup-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.rider-pickup-step {
+  position: relative;
+  text-align: center;
+  color: #9aa9a0;
+}
+
+.rider-pickup-step::after {
+  content: "";
+  position: absolute;
+  top: 19px;
+  left: calc(50% + 20px);
+  right: calc(-50% + 20px);
+  height: 2px;
+  background: #dce8df;
+}
+
+.rider-pickup-step:last-child::after {
+  display: none;
+}
+
+.rider-pickup-step.completed {
+  color: #159447;
+}
+
+.rider-pickup-step.completed::after {
+  background: #19b85a;
+}
+
+.rider-pickup-step-icon {
+  width: 38px;
+  height: 38px;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #edf2ef;
+  color: #93a199;
+  position: relative;
+  z-index: 2;
+}
+
+.rider-pickup-step.completed .rider-pickup-step-icon {
+  background: #19b85a;
+  color: white;
+}
+
+.rider-pickup-step span {
+  display: block;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.rider-pickup-action {
+  margin-top: 22px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #10251a;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rider-pickup-action-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(25, 184, 90, 0.16);
+  color: #5ee88c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rider-pickup-action-icon.success {
+  background: rgba(25, 184, 90, 0.25);
+}
+
+.rider-pickup-action-text {
+  flex: 1;
+}
+
+.rider-pickup-action-text strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.rider-pickup-action-text span {
+  display: block;
+  color: #b9c9bf;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rider-pickup-button {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 17px;
+  background: #19b85a;
+  color: white;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.rider-pickup-button:hover {
+  background: #159f4d;
+}
+
+.rider-pickup-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   HOKADA RIDER - DROP-OFF JOURNEY
+========================================================= */
+
+.rider-dropoff-section {
+  margin-top: 18px;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #f7f8ff, #ffffff);
+  border: 1px solid #d9dcf3;
+  box-shadow: 0 12px 35px rgba(66, 76, 170, 0.08);
+}
+
+.rider-dropoff-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e2e4f2;
+}
+
+.rider-dropoff-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #515bc7;
+  color: white;
+  flex-shrink: 0;
+}
+
+.rider-dropoff-header span {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #515bc7;
+  margin-bottom: 4px;
+}
+
+.rider-dropoff-header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #171a32;
+}
+
+.rider-dropoff-destination {
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 17px;
+  background: #ffffff;
+  border: 1px solid #e1e3f1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rider-dropoff-location-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #eef0ff;
+  color: #515bc7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rider-dropoff-destination span {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #7c80a0;
+  margin-bottom: 4px;
+}
+
+.rider-dropoff-destination strong {
+  display: block;
+  color: #20233b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.rider-dropoff-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.rider-dropoff-step {
+  text-align: center;
+  color: #9a9db2;
+}
+
+.rider-dropoff-step-icon {
+  width: 38px;
+  height: 38px;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eceef5;
+  color: #9498ad;
+}
+
+.rider-dropoff-step.active,
+.rider-dropoff-step.current {
+  color: #515bc7;
+}
+
+.rider-dropoff-step.active .rider-dropoff-step-icon,
+.rider-dropoff-step.current .rider-dropoff-step-icon {
+  background: #515bc7;
+  color: white;
+}
+
+.rider-dropoff-step span {
+  display: block;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.rider-dropoff-action {
+  margin-top: 22px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #1c2042;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rider-dropoff-action-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(81, 91, 199, 0.22);
+  color: #9da5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rider-dropoff-action-text {
+  flex: 1;
+}
+
+.rider-dropoff-action-text strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.rider-dropoff-action-text span {
+  display: block;
+  color: #c1c4dc;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rider-dropoff-button {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 17px;
+  background: #636ce0;
+  color: white;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.rider-dropoff-button:hover {
+  background: #515bc7;
+}
+
+.rider-dropoff-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+  .rider-pickup-section,
+  .rider-dropoff-section {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .rider-pickup-progress,
+  .rider-dropoff-progress {
+    gap: 3px;
+  }
+
+  .rider-pickup-step span,
+  .rider-dropoff-step span {
+    font-size: 9px;
+  }
+
+  .rider-pickup-action,
+  .rider-dropoff-action {
+    flex-wrap: wrap;
+  }
+
+  .rider-pickup-action-text,
+  .rider-dropoff-action-text {
+    min-width: calc(100% - 60px);
+  }
+
+  .rider-pickup-button,
+  .rider-dropoff-button {
+    width: 100%;
+    padding: 14px;
+  }
+}
+/* =========================================================
+   CUSTOMER DELIVERY JOURNEY
+========================================================= */
+
+.customer-journey-card {
+  margin-top: 18px;
+  padding: 20px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid #e5e9e6;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+.customer-journey-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.customer-journey-header strong {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: #19a952;
+}
+
+.customer-journey {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.customer-journey-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  min-height: 66px;
+  opacity: 0.45;
+}
+
+.customer-journey-step.complete {
+  opacity: 1;
+}
+
+.customer-journey-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 17px;
+  top: 37px;
+  bottom: 0;
+  width: 2px;
+  background: #e1e6e3;
+}
+
+.customer-journey-step.complete:not(:last-child)::after {
+  background: #19b85a;
+}
+
+.customer-journey-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef1ef;
+  color: #8a968f;
+  position: relative;
+  z-index: 2;
+}
+
+.customer-journey-step.complete .customer-journey-icon {
+  background: #19b85a;
+  color: white;
+}
+
+.customer-journey-step.dropoff .customer-journey-icon {
+  background: #eef0ff;
+  color: #515bc7;
+}
+
+.customer-journey-step.dropoff.complete .customer-journey-icon {
+  background: #515bc7;
+  color: white;
+}
+
+.customer-journey-step > div:last-child {
+  padding-top: 2px;
+}
+
+.customer-journey-step strong {
+  display: block;
+  font-size: 13px;
+  color: #18231d;
+  margin-bottom: 3px;
+}
+
+.customer-journey-step span {
+  display: block;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #7c8981;
+}
+
+@media (max-width: 600px) {
+  .customer-journey-card {
+    padding: 17px;
+    border-radius: 19px;
+  }
+
+  .customer-journey-step {
+    min-height: 62px;
+  }
+
+  .customer-journey-step strong {
+    font-size: 12px;
+  }
+
+  .customer-journey-step span {
+    font-size: 10px;
+  }
+}
+/* ================================
+   DELIVERY COMPLETE PAGE
+================================ */
+
+.delivery-complete-page {
+  min-height: 100vh;
+  padding: 32px 20px 110px;
+  background: #f7f9f8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.delivery-complete-icon {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: #e9f9ef;
+  color: #19b85a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px auto 22px;
+  box-shadow: 0 8px 24px rgba(25, 184, 90, 0.12);
+}
+
+.delivery-complete-page .eyebrow {
+  color: #19b85a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+}
+
+.delivery-complete-page .matching-title {
+  color: #111816;
+  font-size: 32px;
+  line-height: 1.12;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 14px;
+  letter-spacing: -0.7px;
+}
+
+.delivery-complete-page .matching-text {
+  max-width: 340px;
+  color: #69736f;
+  font-size: 15px;
+  line-height: 1.6;
+  text-align: center;
+  margin: 0 0 26px;
+}
+
+/* ================================
+   DELIVERY SUMMARY CARD
+================================ */
+
+.delivery-complete-card {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border: 1px solid #e5ebe7;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(15, 30, 23, 0.06);
+  margin-bottom: 20px;
+}
+
+.delivery-complete-card > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.delivery-complete-card > div + div {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #edf1ef;
+}
+
+.delivery-complete-card span {
+  color: #7a8580;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.delivery-complete-card strong {
+  color: #151c19;
+  font-size: 14px;
+  font-weight: 750;
+  text-align: right;
+}
+
+/* ================================
+   PICKUP / DROP-OFF ROW
+================================ */
+
+.delivery-complete-card .route-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 0 20px;
+}
+
+.delivery-complete-card .route-point {
+  flex: 1;
+}
+
+.delivery-complete-card .route-point span {
+  display: block;
+  font-size: 11px;
+  color: #8a948f;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 5px;
+}
+
+.delivery-complete-card .route-point strong {
+  display: block;
+  text-align: left;
+  color: #18201c;
+  font-size: 14px;
+}
+
+.delivery-complete-card .route-arrow {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #eef9f2;
+  color: #19b85a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ================================
+   RIDER INFORMATION
+================================ */
+
+.delivery-complete-card .rider-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.delivery-complete-card .rider-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #eaf8ef;
+  color: #19b85a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.delivery-complete-card .rider-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.delivery-complete-card .rider-details strong {
+  display: block;
+  text-align: left;
+  font-size: 15px;
+  margin-bottom: 3px;
+}
+
+.delivery-complete-card .rider-details span {
+  display: block;
+  text-align: left;
+  color: #7b8581;
+  font-size: 12px;
+}
+
+/* ================================
+   RATING
+================================ */
+
+.delivery-complete-card .rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #f5a623;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.delivery-complete-card .rating svg {
+  fill: #f5a623;
+}
+
+/* ================================
+   BUTTONS
+================================ */
+
+.delivery-complete-actions {
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.delivery-complete-actions button {
+  width: 100%;
+  min-height: 54px;
+  border-radius: 15px;
+  border: none;
+  font-size: 15px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.delivery-complete-actions button:active {
+  transform: scale(0.98);
+}
+
+.delivery-complete-actions button:first-child {
+  background: #19b85a;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(25, 184, 90, 0.2);
+}
+
+.delivery-complete-actions button:first-child:hover {
+  background: #159e4d;
+}
+
+.delivery-complete-actions button:last-child {
+  background: #ffffff;
+  color: #18201c;
+  border: 1px solid #dfe6e2;
+}
+
+.delivery-complete-actions button:last-child:hover {
+  background: #f5f8f6;
+}
+
+/* ================================
+   MOBILE
+================================ */
+
+@media (max-width: 480px) {
+  .delivery-complete-page {
+    padding: 24px 16px 100px;
+  }
+
+  .delivery-complete-icon {
+    width: 70px;
+    height: 70px;
+  }
+
+  .delivery-complete-page .matching-title {
+    font-size: 28px;
+  }
+
+  .delivery-complete-card {
+    border-radius: 19px;
+    padding: 17px;
+  }
+
+  .delivery-complete-card > div {
+    gap: 10px;
+  }
+}
+/* =========================================
+   HOKADA — PICKUP / DROP-OFF TRACKING
+========================================= */
+
+.customer-journey-card {
+  margin-top: 18px;
+  padding: 20px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid #e7ece9;
+  box-shadow: 0 8px 28px rgba(20, 35, 28, 0.05);
+}
+
+.customer-journey-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.customer-journey-header strong {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #19b85a;
+  background: #eaf9ef;
+  padding: 7px 10px;
+  border-radius: 999px;
+}
+
+/* =========================================
+   JOURNEY STEPS
+========================================= */
+
+.customer-journey {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.customer-journey-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 13px 10px;
+  border-radius: 15px;
+  transition: 0.2s ease;
+}
+
+.customer-journey-step:hover {
+  background: #f8faf9;
+}
+
+.customer-journey-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #eef2ef;
+  color: #9aa49f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #e4e9e6;
+}
+
+.customer-journey-step > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 1px;
+}
+
+.customer-journey-step strong {
+  color: #26302b;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.customer-journey-step span {
+  color: #89928e;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* =========================================
+   COMPLETED STEPS
+========================================= */
+
+.customer-journey-step.complete {
+  background: #f3fbf6;
+}
+
+.customer-journey-step.complete .customer-journey-icon {
+  background: #19b85a;
+  color: #ffffff;
+  border-color: #19b85a;
+  box-shadow: 0 5px 12px rgba(25, 184, 90, 0.18);
+}
+
+.customer-journey-step.complete strong {
+  color: #15984c;
+}
+
+.customer-journey-step.complete span {
+  color: #6f8177;
+}
+
+/* =========================================
+   DROP-OFF SECTION
+========================================= */
+
+.customer-journey-step.dropoff {
+  margin-top: 8px;
+  border: 1px solid #e7e5ff;
+  background: #fafaff;
+}
+
+.customer-journey-step.dropoff .customer-journey-icon {
+  background: #f0efff;
+  color: #6558d8;
+  border-color: #e1dfff;
+}
+
+.customer-journey-step.dropoff.complete {
+  background: #f6f5ff;
+  border-color: #ddd9ff;
+}
+
+.customer-journey-step.dropoff.complete .customer-journey-icon {
+  background: #6558d8;
+  color: #ffffff;
+  border-color: #6558d8;
+  box-shadow: 0 5px 12px rgba(101, 88, 216, 0.18);
+}
+
+.customer-journey-step.dropoff.complete strong {
+  color: #5549bd;
+}
+
+/* =========================================
+   ACTIVE JOURNEY STEP
+========================================= */
+
+.customer-journey-step:not(.complete) .customer-journey-icon {
+  animation: hokada-step-pulse 1.8s infinite;
+}
+
+@keyframes hokada-step-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 184, 90, 0.18);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(25, 184, 90, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 184, 90, 0);
+  }
+}
+
+/* =========================================
+   MAP STAGE HEADER
+========================================= */
+
+.hokada-map-stage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border-radius: 16px;
+  margin-bottom: 10px;
+}
+
+.hokada-map-stage-pickup {
+  background: #eefaf2;
+  border: 1px solid #d6f1df;
+}
+
+.hokada-map-stage-dropoff {
+  background: #f3f1ff;
+  border: 1px solid #e3dfff;
+}
+
+.hokada-map-stage-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hokada-map-stage-pickup .hokada-map-stage-icon {
+  background: #19b85a;
+  color: #ffffff;
+}
+
+.hokada-map-stage-dropoff .hokada-map-stage-icon {
+  background: #6558d8;
+  color: #ffffff;
+}
+
+.hokada-map-stage > div:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hokada-map-stage span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.hokada-map-stage-pickup span {
+  color: #15984c;
+}
+
+.hokada-map-stage-dropoff span {
+  color: #5549bd;
+}
+
+.hokada-map-stage strong {
+  color: #26302b;
+  font-size: 13px;
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+  .customer-journey-card {
+    padding: 16px;
+    border-radius: 19px;
+  }
+
+  .customer-journey-step {
+    padding: 11px 7px;
+    gap: 10px;
+  }
+
+  .customer-journey-icon {
+    width: 31px;
+    height: 31px;
+  }
+
+  .customer-journey-step strong {
+    font-size: 13px;
+  }
+
+  .customer-journey-step span {
+    font-size: 11px;
+  }
+
+  .hokada-map-stage {
+    padding: 11px 12px;
+  }
+}
+/* =========================================
+   HOKADA RIDER AUTH
+========================================= */
+
+.rider-auth-page {
+  min-height: 100vh;
+  background: #f5f8f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+}
+
+.rider-auth-card {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border: 1px solid #e4ebe6;
+  border-radius: 28px;
+  padding: 36px;
+  box-shadow: 0 20px 60px rgba(20, 35, 28, 0.08);
+}
+
+.rider-auth-logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: #19b85a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px rgba(25, 184, 90, 0.2);
+}
+
+.rider-auth-header {
+  margin-bottom: 28px;
+}
+
+.rider-auth-header h1 {
+  margin: 8px 0 10px;
+  color: #18211d;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.8px;
+}
+
+.rider-auth-header p {
+  margin: 0;
+  color: #7d8983;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.rider-auth-field {
+  margin-bottom: 18px;
+}
+
+.rider-auth-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #35403a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rider-auth-input {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 15px;
+  border: 1px solid #dfe7e2;
+  border-radius: 15px;
+  background: #fbfcfb;
+  transition: 0.2s ease;
+}
+
+.rider-auth-input:focus-within {
+  border-color: #19b85a;
+  box-shadow: 0 0 0 4px rgba(25, 184, 90, 0.08);
+  background: #ffffff;
+}
+
+.rider-auth-input svg {
+  color: #89958f;
+  flex-shrink: 0;
+}
+
+.rider-auth-input input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #202923;
+  font-size: 14px;
+}
+
+.rider-auth-input input::placeholder {
+  color: #a4ada8;
+}
+
+.rider-auth-submit {
+  width: 100%;
+  height: 54px;
+  margin-top: 6px;
+  border: none;
+  border-radius: 15px;
+  background: #19b85a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.rider-auth-submit:hover {
+  background: #159e4d;
+  transform: translateY(-1px);
+}
+
+.rider-auth-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.rider-auth-switch {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid #edf1ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  color: #7d8983;
+  font-size: 13px;
+}
+
+.rider-auth-switch button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #19a852;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rider-auth-error {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  background: #fff1f1;
+  border: 1px solid #ffd8d8;
+  color: #c33b3b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rider-auth-message {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  background: #effaf3;
+  border: 1px solid #d6f1df;
+  color: #168b47;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .rider-auth-page {
+    padding: 18px;
+  }
+
+  .rider-auth-card {
+    padding: 26px 20px;
+    border-radius: 23px;
+  }
+
+  .rider-auth-header h1 {
+    font-size: 26px;
+  }
+}
+/* =========================================
+   RIDER HEADER ACTIONS
+========================================= */
+
+.rider-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rider-logout-button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e2e9e4;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #68756e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.rider-logout-button:hover {
+  background: #fff3f3;
+  border-color: #ffd7d7;
+  color: #c43d3d;
+}
+
+@media (max-width: 600px) {
+  .rider-header-actions {
+    gap: 6px;
+  }
+
+  .rider-logout-button {
+    width: 38px;
+    height: 38px;
+  }
+}
+/* =========================================
+   RIDER DELIVERY HISTORY
+   ========================================= */
+
+.rider-history-section {
+  margin-top: 24px;
+  padding: 22px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid #e7ece9;
+  box-shadow: 0 10px 30px rgba(20, 35, 28, 0.05);
+}
+
+.rider-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.rider-history-header h3 {
+  margin: 5px 0 0;
+  color: #26302b;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.rider-history-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eefaf2;
+  color: #19b85a;
+}
+
+.rider-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rider-history-card {
+  padding: 17px;
+  border-radius: 18px;
+  background: #fafcfb;
+  border: 1px solid #e8eeea;
+}
+
+.rider-history-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 17px;
+}
+
+.rider-history-card-top > strong {
+  color: #15984c;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.rider-history-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #15984c;
+  background: #eaf9ef;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.rider-history-route {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rider-history-location {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.rider-history-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  margin-top: 5px;
+  border-radius: 50%;
+}
+
+.rider-history-dot.pickup {
+  background: #19b85a;
+  box-shadow: 0 0 0 4px #e4f7ea;
+}
+
+.rider-history-dot.dropoff {
+  background: #6558d8;
+  box-shadow: 0 0 0 4px #eeecff;
+}
+
+.rider-history-location small {
+  display: block;
+  margin-bottom: 3px;
+  color: #89928e;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.rider-history-location p {
+  margin: 0;
+  color: #39443e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.rider-history-line {
+  width: 1px;
+  height: 14px;
+  margin-left: 4px;
+  background: #dfe6e2;
+}
+
+.rider-history-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e8eeea;
+  color: #89928e;
+  font-size: 11px;
+}
+
+.rider-history-empty {
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 17px;
+  background: #f8faf9;
+  border: 1px dashed #dce5df;
+  color: #89928e;
+  text-align: center;
+}
+
+.rider-history-empty > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rider-history-empty strong {
+  color: #39443e;
+  font-size: 13px;
+}
+
+.rider-history-empty span {
+  font-size: 11px;
+}
+
+.rider-history-spin {
+  animation: rider-history-spin 1s linear infinite;
+}
+
+@keyframes rider-history-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .rider-history-section {
+    padding: 17px;
+    border-radius: 20px;
+  }
+
+  .rider-history-card {
+    padding: 14px;
+  }
+
+  .rider-history-card-top > strong {
+    font-size: 14px;
+  }
+
+  .rider-history-location p {
+    font-size: 11px;
+  }
+}
+/* =========================================
+   RIDER AUTH - PASSWORD CONTROLS
+   ========================================= */
+
+.rider-auth-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.rider-auth-label-row label {
+  margin-bottom: 0;
+}
+
+.rider-forgot-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: #19b85a;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.rider-forgot-button:hover {
+  color: #15984c;
+  text-decoration: underline;
+}
+
+.rider-forgot-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rider-password-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 4px;
+  color: #89928e;
+  cursor: pointer;
+}
+
+.rider-password-toggle:hover {
+  color: #19b85a;
+}
+
+.rider-password-toggle:focus {
+  outline: none;
+}
+/* =========================================
+   HOKADA CUSTOMER CHAT
+========================================= */
+
+.hokada-chat-section {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #e5e9e5;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.hokada-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.hokada-chat-header h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+}
+
+.hokada-chat-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hokada-chat-status.enabled {
+  background: #e9f8ed;
+  color: #16843a;
+}
+
+.hokada-chat-status.disabled {
+  background: #f1f3f1;
+  color: #737873;
+}
+
+.hokada-chat-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f7f8f7;
+  color: #747874;
+}
+
+.hokada-chat-locked svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.hokada-chat-locked strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #343834;
+  font-size: 14px;
+}
+
+.hokada-chat-locked span {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.hokada-chat-open-button {
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: #111711;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hokada-chat-open-button:hover {
+  opacity: 0.92;
+}
+
+.hokada-chat-count {
+  min-width: 21px;
+  height: 21px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111711;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.hokada-chat-box {
+  margin-top: 12px;
+  border: 1px solid #e6eae6;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f7f9f7;
+}
+
+.hokada-chat-messages {
+  min-height: 220px;
+  max-height: 340px;
+  padding: 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.hokada-chat-empty {
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #8a908a;
+  gap: 7px;
+}
+
+.hokada-chat-empty strong {
+  color: #444944;
+  font-size: 14px;
+}
+
+.hokada-chat-empty span {
+  font-size: 12px;
+}
+
+.hokada-chat-message {
+  display: flex;
+  width: 100%;
+}
+
+.hokada-chat-message.customer {
+  justify-content: flex-end;
+}
+
+.hokada-chat-message.rider {
+  justify-content: flex-start;
+}
+
+.hokada-chat-bubble {
+  max-width: 78%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hokada-chat-message.customer .hokada-chat-bubble {
+  background: #111711;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.hokada-chat-message.rider .hokada-chat-bubble {
+  background: #ffffff;
+  color: #252925;
+  border: 1px solid #e1e5e1;
+  border-bottom-left-radius: 4px;
+}
+
+.hokada-chat-bubble span {
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.hokada-chat-bubble small {
+  font-size: 9px;
+  opacity: 0.65;
+  align-self: flex-end;
+}
+
+.hokada-chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #e1e5e1;
+  background: #ffffff;
+}
+
+.hokada-chat-input-row input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #dfe4df;
+  border-radius: 10px;
+  outline: none;
+  font-size: 13px;
+  background: #ffffff;
+}
+
+.hokada-chat-input-row input:focus {
+  border-color: #19b85a;
+}
+
+.hokada-chat-input-row button {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: #19b85a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.hokada-chat-input-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* =========================================
+   HOKADA CUSTOMER CHAT
+   ========================================= */
+
+.hokada-chat-section {
+  width: 100%;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.hokada-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.hokada-chat-header h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.hokada-chat-header .eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
+.hokada-chat-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hokada-chat-status.enabled {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.hokada-chat-status.disabled {
+  color: #6b7280;
+  background: #f3f4f6;
+}
+
+.hokada-chat-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.hokada-chat-locked svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.hokada-chat-locked div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hokada-chat-locked strong {
+  color: #374151;
+  font-size: 14px;
+}
+
+.hokada-chat-locked span {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hokada-chat-open-button {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.hokada-chat-open-button:hover {
+  opacity: 0.92;
+}
+
+.hokada-chat-open-button:active {
+  transform: scale(0.98);
+}
+
+.hokada-chat-count {
+  min-width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hokada-chat-box {
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.hokada-chat-messages {
+  height: 280px;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.hokada-chat-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.hokada-chat-empty strong {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.hokada-chat-empty span {
+  font-size: 13px;
+}
+
+.hokada-chat-message {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.hokada-chat-message.customer {
+  justify-content: flex-end;
+}
+
+.hokada-chat-message.rider {
+  justify-content: flex-start;
+}
+
+.hokada-chat-bubble {
+  max-width: 78%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.hokada-chat-message.customer .hokada-chat-bubble {
+  border-bottom-right-radius: 4px;
+  background: #111827;
+  color: #ffffff;
+}
+
+.hokada-chat-message.rider .hokada-chat-bubble {
+  border-bottom-left-radius: 4px;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+}
+
+.hokada-chat-bubble small {
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.hokada-chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.hokada-chat-input-row input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+}
+
+.hokada-chat-input-row input:focus {
+  border-color: #111827;
+}
+
+.hokada-chat-input-row button {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.hokada-chat-input-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* =========================================
+     HOKADA RIDER CHAT
+     ========================================= */
+
+.rider-chat-section {
+  width: 100%;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.rider-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.rider-chat-header h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.rider-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
+.rider-chat-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rider-chat-status.enabled {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.rider-chat-status.disabled {
+  color: #6b7280;
+  background: #f3f4f6;
+}
+
+.rider-chat-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.rider-chat-locked svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.rider-chat-locked div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rider-chat-locked strong {
+  color: #374151;
+  font-size: 14px;
+}
+
+.rider-chat-locked span {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rider-chat-open-button {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.rider-chat-open-button:hover {
+  opacity: 0.92;
+}
+
+.rider-chat-open-button:active {
+  transform: scale(0.98);
+}
+
+.rider-chat-count {
+  min-width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.rider-chat-box {
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.rider-chat-messages {
+  height: 280px;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.rider-chat-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.rider-chat-empty strong {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.rider-chat-empty span {
+  font-size: 13px;
+}
+
+.rider-chat-message {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.rider-chat-message.rider {
+  justify-content: flex-end;
+}
+
+.rider-chat-message.customer {
+  justify-content: flex-start;
+}
+
+.rider-chat-bubble {
+  max-width: 78%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.rider-chat-message.rider .rider-chat-bubble {
+  border-bottom-right-radius: 4px;
+  background: #111827;
+  color: #ffffff;
+}
+
+.rider-chat-message.customer .rider-chat-bubble {
+  border-bottom-left-radius: 4px;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+}
+
+.rider-chat-bubble small {
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.rider-chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.rider-chat-input-row input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  color: #111827;
+  background: #ffffff;
+}
+
+.rider-chat-input-row input:focus {
+  border-color: #111827;
+}
+
+.rider-chat-input-row button {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.rider-chat-input-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* =========================================
+     MOBILE CHAT
+     ========================================= */
+
+@media (max-width: 600px) {
+  .hokada-chat-section,
+  .rider-chat-section {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .hokada-chat-header,
+  .rider-chat-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .hokada-chat-status,
+  .rider-chat-status {
+    align-self: flex-start;
+  }
+
+  .hokada-chat-messages,
+  .rider-chat-messages {
+    height: 260px;
+    padding: 12px;
+  }
+
+  .hokada-chat-bubble,
+  .rider-chat-bubble {
+    max-width: 85%;
+  }
+}
+/* =========================================================
+   HOKADA CUSTOMER AUTHENTICATION
+   ========================================================= */
+
+.auth-shell {
+  min-height: 100vh;
+}
+
+.auth-page {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.auth-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+}
+
+.auth-card-header {
+  margin-bottom: 24px;
+}
+
+.auth-card-header h1 {
+  margin: 8px 0;
+  font-size: 32px;
+  line-height: 1.1;
+}
+
+.auth-card-header p {
+  margin: 0;
+  color: #6b746d;
+  line-height: 1.6;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth-submit {
+  margin-top: 10px;
+}
+
+.auth-message {
+  padding: 13px 15px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.auth-message.error {
+  background: #fff1f1;
+  color: #b42318;
+  border: 1px solid #ffd1d1;
+}
+
+.auth-message.success {
+  background: #effaf2;
+  color: #16803c;
+  border: 1px solid #c9efd3;
+}
+
+.auth-switch {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #edf1ed;
+  color: #6b746d;
+  font-size: 14px;
+  text-align: center;
+}
+
+.auth-switch button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #19b85a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-loading-page {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px 20px;
+}
+
+@media (max-width: 600px) {
+  .auth-page {
+    padding: 28px 16px 50px;
+  }
+
+  .auth-card {
+    padding: 22px 18px;
+    border-radius: 20px;
+  }
+
+  .auth-card-header h1 {
+    font-size: 27px;
+  }
+}
+.payment-callback {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.payment-callback-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 36px 24px;
+  text-align: center;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.08);
+}
+
+.payment-callback-card h1 {
+  margin: 20px 0 10px;
+  font-size: 1.5rem;
+}
+
+.payment-callback-card p {
+  color: #647067;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.payment-callback-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.payment-spinner {
+  animation: payment-spin 1s linear infinite;
+}
+
+@keyframes payment-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* HOKADA structured delivery addresses */
+.hokada-address-section {
+  min-width: 0;
+}
+
+.hokada-address-heading {
+  display: block;
+  font-size: 16px;
+  font-weight: 750;
+  margin-bottom: 6px;
+}
+
+.hokada-address-help {
+  margin: 0 0 14px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hokada-address-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hokada-address-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.hokada-address-fields input,
+.hokada-address-fields select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 11px 12px;
+  border: 1px solid #dbe2ea;
+  border-radius: 10px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+  font-weight: 400;
+  outline: none;
+}
+
+.hokada-address-fields input:focus,
+.hokada-address-fields select:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.hokada-address-summary {
+  margin-top: 16px;
+  padding: 13px;
+  border-radius: 10px;
+  background: #f1f8f3;
+  overflow-wrap: anywhere;
+}
+
+.hokada-address-summary strong {
+  color: #172033;
+  font-size: 13px;
+}
+
+.hokada-address-summary p {
+  margin: 6px 0 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Address autocomplete suggestions */
+.hokada-place-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid #dbe7df;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.hokada-place-suggestions > strong {
+  padding: 4px 7px 6px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hokada-place-suggestion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #f8faf9;
+  color: #172033;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.hokada-place-suggestion:hover,
+.hokada-place-suggestion:focus-visible {
+  border-color: #86c99a;
+  background: #eff8f1;
+  outline: none;
+}
+
+.hokada-place-suggestion span {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.hokada-place-suggestion small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.hokada-address-fields label > small[role="status"] {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 450;
+  line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .hokada-address-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+}

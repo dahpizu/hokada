@@ -1,0 +1,436 @@
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* HOKADA: mobile-friendly forms and prevent iPhone input zoom */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+*, 
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+input,
+select,
+textarea,
+button {
+  font-size: 16px;
+}
+
+.hokada-address-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-field input,
+.hokada-address-field select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 14px;
+  font-size: 16px !important;
+  line-height: 1.4;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.hokada-address-summary {
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.hokada-place-suggestions {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.hokada-place-suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 12px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hokada-place-suggestion span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hokada-address-confirm {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  .hokada-address-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .hokada-address-fields {
+    gap: 12px;
+  }
+
+  .hokada-address-field input,
+  .hokada-address-field select {
+    min-height: 48px;
+  }
+}
+
+
+/* HOKADA final mobile form safeguards */
+.hokada-address-fields input,
+.hokada-address-fields select,
+.hokada-address-fields textarea,
+.hokada-address-field input,
+.hokada-address-field select,
+.hokada-address-field textarea {
+  font-size: 16px !important;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-section,
+.hokada-address-fields,
+.hokada-address-field {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.hokada-address-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hokada-place-suggestions,
+.hokada-place-suggestion {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .hokada-address-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hokada-address-fields input,
+  .hokada-address-fields select,
+  .hokada-address-field input,
+  .hokada-address-field select {
+    min-height: 48px;
+    font-size: 16px !important;
+  }
+}
+/* HOKADA — mobile Safari zoom and horizontal overflow fix */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  overflow-x: clip;
+}
+
+input,
+select,
+textarea,
+button {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px !important;
+  -webkit-appearance: none;
+}
+
+@media screen and (max-width: 768px) {
+  .hokada-address-section,
+  .hokada-address-fields,
+  .hokada-address-field,
+  .hokada-address-map-search,
+  .hokada-address-summary {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hokada-address-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hokada-address-field input,
+  .hokada-address-field select,
+  .hokada-address-field textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    font-size: 16px !important;
+  }
+
+  .hokada-address-confirm {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .hokada-place-suggestion {
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* HOKADA saved-address picker */
+.hokada-saved-address-picker {
+  position: relative;
+  width: 100%;
+  margin: 12px 0 18px;
+}
+
+.hokada-saved-address-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 13px 16px;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+  font: inherit;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.hokada-saved-address-toggle:hover {
+  background: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.55);
+}
+
+.hokada-saved-address-toggle:active {
+  transform: scale(0.99);
+}
+
+.hokada-saved-address-toggle:focus-visible,
+.hokada-saved-address-option:focus-visible,
+.hokada-saved-address-new:focus-visible {
+  outline: 3px solid rgba(139, 92, 246, 0.35);
+  outline-offset: 3px;
+}
+
+.hokada-saved-address-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 9px;
+  padding: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 14px;
+  background: var(--card, #ffffff);
+  box-shadow: 0 12px 28px rgba(25, 15, 45, 0.09);
+  animation: hokada-saved-address-open 180ms ease-out;
+}
+
+.hokada-saved-address-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.hokada-saved-address-option span {
+  flex: 1;
+  min-width: 0;
+}
+
+.hokada-saved-address-option:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.hokada-saved-address-option:has(svg[aria-label="Selected"]) {
+  border-color: rgba(139, 92, 246, 0.25);
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+}
+
+.hokada-saved-address-new {
+  width: 100%;
+  padding: 12px;
+  border: 1px dashed rgba(139, 92, 246, 0.4);
+  border-radius: 9px;
+  background: transparent;
+  color: #7c3aed;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.hokada-saved-address-new:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+@keyframes hokada-saved-address-open {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hokada-saved-address-toggle,
+  .hokada-saved-address-option,
+  .hokada-saved-address-new {
+    transition: none;
+  }
+
+  .hokada-saved-address-list {
+    animation: none;
+  }
+}
+
+/* HOKADA saved-address delete controls */
+.hokada-saved-address-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hokada-saved-address-row .hokada-saved-address-option {
+  flex: 1;
+  min-width: 0;
+}
+
+.hokada-saved-address-delete {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  min-height: 44px;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  border-radius: 9px;
+  background: rgba(220, 38, 38, 0.06);
+  color: #dc2626;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.hokada-saved-address-delete:hover {
+  background: rgba(220, 38, 38, 0.13);
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.hokada-saved-address-delete:focus-visible {
+  outline: 3px solid rgba(220, 38, 38, 0.25);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hokada-saved-address-delete {
+    transition: none;
+  }
+}
+
+/* Keep the next booking section heading visible after smooth scrolling. */
+.hokada-address-section h3,
+.form-section label {
+  scroll-margin-top: 80px;
+}

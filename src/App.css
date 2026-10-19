@@ -6508,6 +6508,12 @@ textarea::placeholder {
   outline: none;
 }
 
+.hokada-address-fields select {
+  width: fit-content;
+  max-width: 100%;
+  min-width: 180px;
+}
+
 .hokada-address-fields input:focus,
 .hokada-address-fields select:focus {
   border-color: #16a34a;
@@ -6606,9 +6612,9 @@ textarea::placeholder {
 
 @media (max-width: 560px) {
   .hokada-address-fields {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
-
 }
 
 /* HOKADA — cross-device responsive layout safeguards */
@@ -6737,4 +6743,42 @@ body {
   .page {
     width: calc(100% - 20px);
   }
+}
+
+/* Compact current-location button */
+.hokada-address-map-search .hokada-place-suggestion {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.hokada-address-map-search .hokada-place-suggestion span {
+  text-align: left;
+}
+
+@media (max-width: 480px) {
+  .hokada-address-map-search .hokada-place-suggestion {
+    min-height: 42px;
+  }
+}
+
+.live-price-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.live-price-error {
+  color: #dc2626;
+  opacity: 1;
 }
