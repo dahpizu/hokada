@@ -1681,12 +1681,14 @@ function TrackingPage({
   // delayed realtime status update still says arrived_at_dropoff.
   const isDelivered = status === "delivered" || paymentIsPaid;
   const riderAtDestination = ["arrived_at_dropoff", "delivered"].includes(status);
+  const paymentIsPending = delivery?.payment_status === "pending";
   const deliveryFee = Number(delivery?.delivery_fee);
   const hasPayableDeliveryFee = Number.isFinite(deliveryFee) && deliveryFee >= 1;
   const isMatchingRider = ["searching", "pending"].includes(status) && !rider;
   const liveTrackingActive = !riderAtDestination && !paymentIsPaid;
   const paymentIsAvailable =
     PAYMENT_ELIGIBLE_STATUSES.includes(status) &&
+    delivery?.payment_status === "unpaid" &&
     !paymentIsPaid &&
     hasPayableDeliveryFee;
 
@@ -1725,9 +1727,12 @@ function TrackingPage({
     },
 
     arrived_at_dropoff: {
-      title: "Rider has arrived at drop-off",
-      description:
-        "Your rider has reached the delivery location. You can now pay your delivery fee.",
+      title: "Delivery reached drop-off",
+      description: paymentIsPending
+        ? "Your delivery is at the destination. We’re confirming the payment status."
+        : hasPayableDeliveryFee && delivery?.payment_status === "unpaid"
+          ? "Your rider has reached the delivery location. You can now pay your delivery fee."
+          : "Your rider has reached the destination. The final delivery status is being confirmed.",
       icon: <Flag size={22} />,
     },
   };
@@ -1878,7 +1883,11 @@ function TrackingPage({
         <div className="section-heading">
           <div>
             <span className="eyebrow">
-              {isDelivered || paymentIsPaid ? "DELIVERY COMPLETE" : "LIVE TRACKING"}
+              {isDelivered || paymentIsPaid
+                ? "DELIVERY COMPLETE"
+                : riderAtDestination
+                  ? "AT DROP-OFF"
+                  : "LIVE TRACKING"}
             </span>
             <h1>{currentStatus.title}</h1>
           </div>
