@@ -1676,8 +1676,10 @@ function TrackingPage({
 }) {
   const delivery = booking?.delivery || booking;
   const status = delivery?.status;
-  const isDelivered = status === "delivered";
   const paymentIsPaid = delivery?.payment_status === "paid";
+  // Payment confirmation completes the customer-facing delivery even if a
+  // delayed realtime status update still says arrived_at_dropoff.
+  const isDelivered = status === "delivered" || paymentIsPaid;
   const riderAtDestination = ["arrived_at_dropoff", "delivered"].includes(status);
   const deliveryFee = Number(delivery?.delivery_fee);
   const hasPayableDeliveryFee = Number.isFinite(deliveryFee) && deliveryFee >= 1;
