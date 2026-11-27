@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
 import { riderApiRequest } from "../../lib/riderApi";
 
-const CHAT_ENABLED_STATUSES = ["arrived", "collected", "arrived_at_dropoff"];
+const CHAT_ENABLED_STATUSES = ["arrived", "collected"];
 
 export default function RiderTrackingChat({ deliveryId, status }) {
   const [messages, setMessages] = useState([]);

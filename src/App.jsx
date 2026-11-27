@@ -1678,8 +1678,15 @@ function TrackingPage({
   const status = delivery?.status;
   const isDelivered = status === "delivered";
   const paymentIsPaid = delivery?.payment_status === "paid";
+  const riderAtDestination = ["arrived_at_dropoff", "delivered"].includes(status);
+  const deliveryFee = Number(delivery?.delivery_fee);
+  const hasPayableDeliveryFee = Number.isFinite(deliveryFee) && deliveryFee >= 1;
+  const isMatchingRider = ["searching", "pending"].includes(status) && !rider;
+  const liveTrackingActive = !riderAtDestination && !paymentIsPaid;
   const paymentIsAvailable =
-    PAYMENT_ELIGIBLE_STATUSES.includes(status) && !paymentIsPaid;
+    PAYMENT_ELIGIBLE_STATUSES.includes(status) &&
+    !paymentIsPaid &&
+    hasPayableDeliveryFee;
 
   const trackingStatus = {
     accepted: {
@@ -1854,18 +1861,17 @@ function TrackingPage({
   return (
     <div className="page-shell">
       <div className="page-content">
-        <div className="success-banner">
-          <div className="success-icon">
-            <Check size={20} />
+        {isMatchingRider && (
+          <div className="success-banner">
+            <div className="success-icon">
+              <Check size={20} />
+            </div>
+            <div>
+              <strong>Rider matching in progress</strong>
+              <span>We’re finding an available rider for your delivery.</span>
+            </div>
           </div>
-
-          <div>
-            <strong>
-              {rider ? "Rider assigned" : "Rider matching in progress"}
-            </strong>
-            <span>Your delivery status is being updated.</span>
-          </div>
-        </div>
+        )}
 
         <div className="section-heading">
           <div>
@@ -1877,7 +1883,7 @@ function TrackingPage({
         </div>
 
 
-        {delivery?.id && !isDelivered && !paymentIsPaid && (
+        {delivery?.id && liveTrackingActive && (
           <Suspense fallback={<div className="tracking-map-loading">Loading map…</div>}>
           <TrackingMap
             deliveryId={delivery.id}
@@ -1906,7 +1912,7 @@ function TrackingPage({
             <span>{currentStatus.description}</span>
           </div>
 
-          <span className="live-dot">LIVE</span>
+          {liveTrackingActive && <span className="live-dot">LIVE</span>}
         </div>
 
         {paymentIsAvailable && (
@@ -2103,7 +2109,7 @@ function TrackingPage({
           )}
         </div>
 
-        {!isDelivered && !paymentIsPaid && (
+        {liveTrackingActive && (
           <TrackingChat
             deliveryId={delivery?.id}
             status={status}

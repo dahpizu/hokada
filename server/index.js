@@ -616,7 +616,7 @@ const RIDER_ACTIVE_STATUSES = [
   "arrived_at_dropoff",
 ];
 const RIDER_AVAILABLE_STATUSES = ["searching", "pending"];
-const CHAT_ENABLED_STATUSES = ["arrived", "collected", "arrived_at_dropoff"];
+const CHAT_ENABLED_STATUSES = ["arrived", "collected"];
 const DELIVERY_SELECT =
   "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at";
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
 import { customerApiRequest } from "../lib/customerApi";
 
-const CHAT_ENABLED_STATUSES = ["arrived", "collected", "arrived_at_dropoff"];
+const CHAT_ENABLED_STATUSES = ["arrived", "collected"];
 
 export default function TrackingChat({ deliveryId, status, paymentStatus }) {
   const [messages, setMessages] = useState([]);
