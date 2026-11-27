@@ -5,7 +5,11 @@ import "./index.css";
 const App = lazy(() => import("./App.jsx"));
 const RiderApp = lazy(() => import("./components/Rider/RiderApp.jsx"));
 
-const path = window.location.pathname.replace(/^\/hokada/, "") || "/";
+const appBasePath = import.meta.env.BASE_URL.replace(/\/+$/, "");
+const currentPath = window.location.pathname;
+const path = currentPath.startsWith(`${appBasePath}/`)
+  ? currentPath.slice(appBasePath.length) || "/"
+  : currentPath || "/";
 const params = new URLSearchParams(window.location.search);
 
 const isRiderApp = path.startsWith("/rider") || params.get("app") === "rider";

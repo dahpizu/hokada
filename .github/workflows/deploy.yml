@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint HOKADA
+        run: npm run lint
+
       - name: Build HOKADA
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}

@@ -115,6 +115,7 @@ const webhookLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many webhook requests." },
 });
+const PAYMENT_RESERVATION_GRACE_MS = 2 * 60 * 1000;
 
 async function requireCustomer(req, res, next) {
   const authorization = req.headers.authorization || "";
@@ -274,7 +275,7 @@ async function getDelivery(deliveryId) {
   const { data, error } = await supabase
     .from("deliveries")
     .select(
-      "id, customer_id, status, delivery_fee, payment_status, payment_provider, payment_reference, payment_amount_kobo, paid_at"
+      "id, customer_id, status, delivery_fee, payment_status, payment_provider, payment_reference, payment_amount_kobo, paid_at, updated_at"
     )
     .eq("id", deliveryId)
     .maybeSingle();
@@ -528,6 +529,16 @@ app.post("/api/rider/profile", requireCustomer, async (req, res) => {
       .select("id, full_name, approval_status, is_online, rating")
       .single();
 
+    if (insertError?.code === "23505") {
+      const { data: concurrentProfile, error: concurrentReadError } = await supabase
+        .from("rider_profiles")
+        .select("id, full_name, approval_status, is_online, rating")
+        .eq("id", req.customer.id)
+        .maybeSingle();
+
+      if (concurrentReadError) throw concurrentReadError;
+      if (concurrentProfile) return res.json({ profile: concurrentProfile });
+    }
     if (insertError) throw insertError;
     return res.status(201).json({ profile });
   } catch (error) {
@@ -724,6 +735,9 @@ app.get("/api/rider/today-stats", requireRider, async (req, res) => {
 });
 
 app.get("/api/rider/deliveries/:deliveryId/messages", chatLimiter, requireRider, async (req, res) => {
+  if (req.riderProfile.approval_status !== "approved") {
+    return res.status(403).json({ error: "Your rider account is awaiting approval." });
+  }
   if (!isUuid(req.params.deliveryId)) {
     return res.status(400).json({ error: "Invalid delivery ID." });
   }
@@ -757,6 +771,9 @@ app.get("/api/rider/deliveries/:deliveryId/messages", chatLimiter, requireRider,
 });
 
 app.post("/api/rider/deliveries/:deliveryId/messages", chatLimiter, requireRider, async (req, res) => {
+  if (req.riderProfile.approval_status !== "approved") {
+    return res.status(403).json({ error: "Your rider account is awaiting approval." });
+  }
   const message = normalizeChatMessage(req.body?.message);
   if (!message) {
     return res.status(400).json({ error: "Messages must be between 1 and 1,000 characters." });
@@ -843,6 +860,18 @@ app.post("/api/rider/deliveries/:deliveryId/accept", requireRider, async (req, r
   }
 
   try {
+    const { data: activeRows, error: activeError } = await supabase
+      .from("deliveries")
+      .select("id")
+      .eq("rider_id", req.rider.id)
+      .in("status", RIDER_ACTIVE_STATUSES)
+      .limit(1);
+
+    if (activeError) throw activeError;
+    if (activeRows?.length) {
+      return res.status(409).json({ error: "Complete your active delivery before accepting another one." });
+    }
+
     const riderName = String(
       req.riderProfile.full_name || req.rider.user_metadata?.full_name || "HOKADA Rider"
     ).trim().slice(0, 150);
@@ -1433,6 +1462,17 @@ app.post(
           });
         }
 
+        const reservationAge = Date.now() - Date.parse(delivery.updated_at || "");
+        if (
+          Number.isFinite(reservationAge) &&
+          reservationAge < PAYMENT_RESERVATION_GRACE_MS
+        ) {
+          return res.status(409).json({
+            error:
+              "A payment checkout is being initialized or may still be processing. Wait a couple of minutes, then check your payment status before retrying.",
+          });
+        }
+
         const oldReference = delivery.payment_reference;
         const oldAmount = delivery.payment_amount_kobo;
         const referenceStatus =
@@ -1470,6 +1510,7 @@ app.post(
             payment_provider: null,
             payment_reference: null,
             payment_amount_kobo: null,
+            updated_at: new Date().toISOString(),
           })
           .eq("id", delivery.id)
           .eq("customer_id", req.customer.id)
@@ -1524,6 +1565,7 @@ app.post(
           payment_provider: "paystack",
           payment_reference: reference,
           payment_amount_kobo: amountKobo,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", delivery.id)
         .eq("customer_id", req.customer.id)

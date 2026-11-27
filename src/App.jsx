@@ -42,6 +42,9 @@ const BASE_FEE = 800;
 const PRICE_PER_KM = 150;
 const EXPRESS_FEE = 500;
 const WAITING_FEE = 200;
+const APP_BASE_PATH = import.meta.env.BASE_URL.replace(/\/+$/, "");
+const APP_HOME_PATH = `${APP_BASE_PATH}/`;
+const PAYMENT_CALLBACK_PATH = `${APP_BASE_PATH}/payment-callback`;
 
 const PAYMENT_ELIGIBLE_STATUSES = ["arrived_at_dropoff", "delivered"];
 
@@ -257,7 +260,7 @@ function PaymentCallback({ onVerified, onReturnHome }) {
 
         hasCompleted.current = true;
 
-        window.history.replaceState({}, "", "/");
+        window.history.replaceState({}, "", APP_HOME_PATH);
       } catch (err) {
         if (!active) return;
 
@@ -339,7 +342,7 @@ function PaymentCallback({ onVerified, onReturnHome }) {
 
 function App() {
   const [page, setPage] = useState(() =>
-    window.location.pathname === "/hokada/payment-callback"
+    window.location.pathname === PAYMENT_CALLBACK_PATH
       ? "payment-callback"
       : "home"
   );
@@ -942,7 +945,7 @@ function App() {
   );
 
   function returnHomeFromPayment() {
-    window.history.replaceState({}, "", "/");
+    window.history.replaceState({}, "", APP_HOME_PATH);
     setIsPaying(false);
     setPage("home");
   }
@@ -1024,7 +1027,7 @@ function App() {
           setCustomerUser(user);
 
           setPage(
-            window.location.pathname === "/hokada/payment-callback"
+            window.location.pathname === PAYMENT_CALLBACK_PATH
               ? "payment-callback"
               : "home"
           );
@@ -2215,7 +2218,7 @@ function DeliveriesPage({ deliveries, onBack, onBook, onSelectDelivery }) {
 function DeliveryDetailsPage({ delivery, onBack, onTrack, onPay, isPaying }) {
   const status = String(delivery.status || "searching")
     .replaceAll("_", " ")
-    .replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
   const price =
     delivery.deliveryFee ??
