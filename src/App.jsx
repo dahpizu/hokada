@@ -1869,13 +1869,15 @@ function TrackingPage({
 
         <div className="section-heading">
           <div>
-            <span className="eyebrow">LIVE TRACKING</span>
+            <span className="eyebrow">
+              {isDelivered || paymentIsPaid ? "DELIVERY COMPLETE" : "LIVE TRACKING"}
+            </span>
             <h1>{currentStatus.title}</h1>
           </div>
         </div>
 
 
-        {delivery?.id && (
+        {delivery?.id && !isDelivered && !paymentIsPaid && (
           <Suspense fallback={<div className="tracking-map-loading">Loading map…</div>}>
           <TrackingMap
             deliveryId={delivery.id}
@@ -2101,11 +2103,13 @@ function TrackingPage({
           )}
         </div>
 
-        <TrackingChat
-          deliveryId={delivery?.id}
-          status={status}
-          paymentStatus={delivery?.payment_status}
-        />
+        {!isDelivered && !paymentIsPaid && (
+          <TrackingChat
+            deliveryId={delivery?.id}
+            status={status}
+            paymentStatus={delivery?.payment_status}
+          />
+        )}
 
         <div className="tracking-actions">
           <button className="primary-button" onClick={onViewDeliveries}>
