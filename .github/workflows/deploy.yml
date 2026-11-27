@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test delivery state rules
+        run: npm test
+
       - name: Lint HOKADA
         run: npm run lint
 

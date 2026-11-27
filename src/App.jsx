@@ -6,6 +6,12 @@ import TrackingChat from "./components/TrackingChat";
 import CustomerAuth from "./components/CustomerAuth";
 import { supabase } from "./lib/supabase";
 import { customerApiRequest as paymentApiRequest } from "./lib/customerApi";
+import {
+  canPayDeliveryFee,
+  getDeliveryPaymentStatus,
+  getDisplayDeliveryStatus,
+  isDeliveryComplete,
+} from "../shared/deliveryState.js";
 
 import {
   ArrowLeft,
@@ -44,8 +50,6 @@ const WAITING_FEE = 200;
 const APP_BASE_PATH = import.meta.env.BASE_URL.replace(/\/+$/, "");
 const APP_HOME_PATH = `${APP_BASE_PATH}/`;
 const PAYMENT_CALLBACK_PATH = `${APP_BASE_PATH}/payment-callback`;
-
-const PAYMENT_ELIGIBLE_STATUSES = ["arrived_at_dropoff", "delivered"];
 
 /*
  * =========================================================
@@ -108,8 +112,6 @@ function formatNaira(amount) {
 }
 
 function mapDeliveryHistory(delivery) {
-  const paymentIsPaid = delivery.payment_status === "paid";
-
   return {
     id: delivery.id,
     pickup: delivery.pickup_address,
@@ -119,7 +121,7 @@ function mapDeliveryHistory(delivery) {
     recipientName: delivery.recipient_name,
     recipientPhone: delivery.recipient_phone,
     notes: delivery.notes || "",
-    status: paymentIsPaid ? "delivered" : delivery.status,
+    status: getDisplayDeliveryStatus(delivery),
     deliveryFee: delivery.delivery_fee,
     paymentStatus: delivery.payment_status,
     pricing: {
@@ -1700,23 +1702,17 @@ function TrackingPage({
   isPaying,
 }) {
   const delivery = booking?.delivery || booking;
-  const status = delivery?.status;
-  const paymentStatus = delivery?.payment_status ?? delivery?.paymentStatus;
+  const status = getDisplayDeliveryStatus(delivery);
+  const paymentStatus = getDeliveryPaymentStatus(delivery);
   const paymentIsPaid = paymentStatus === "paid";
   // Payment confirmation completes the customer-facing delivery even if a
   // delayed realtime status update still says arrived_at_dropoff.
-  const isDelivered = status === "delivered" || paymentIsPaid;
+  const isDelivered = isDeliveryComplete(delivery);
   const riderAtDestination = ["arrived_at_dropoff", "delivered"].includes(status);
   const paymentIsPending = paymentStatus === "pending";
-  const deliveryFee = Number(delivery?.delivery_fee);
-  const hasPayableDeliveryFee = Number.isFinite(deliveryFee) && deliveryFee >= 1;
   const isMatchingRider = ["searching", "pending"].includes(status) && !rider;
   const liveTrackingActive = !riderAtDestination && !paymentIsPaid;
-  const paymentIsAvailable =
-    PAYMENT_ELIGIBLE_STATUSES.includes(status) &&
-    paymentStatus === "unpaid" &&
-    !paymentIsPaid &&
-    hasPayableDeliveryFee;
+  const paymentIsAvailable = canPayDeliveryFee(delivery);
 
   const trackingStatus = {
     accepted: {
@@ -1756,7 +1752,7 @@ function TrackingPage({
       title: "Delivery reached drop-off",
       description: paymentIsPending
         ? "Your delivery is at the destination. We’re confirming the payment status."
-        : hasPayableDeliveryFee && paymentStatus === "unpaid"
+        : canPayDeliveryFee(delivery)
           ? "Your rider has reached the delivery location. You can now pay your delivery fee."
           : "Your rider has reached the destination. The final delivery status is being confirmed.",
       icon: <Flag size={22} />,
@@ -1936,7 +1932,7 @@ function TrackingPage({
             }}
             riderName={rider?.name || booking?.riderName || delivery.rider_name || "HOKADA rider"}
             status={status}
-            paymentStatus={delivery.payment_status}
+            paymentStatus={paymentStatus}
           />
           </Suspense>
         )}
@@ -2263,8 +2259,8 @@ function DeliveriesPage({ deliveries, onBack, onBook, onSelectDelivery }) {
 }
 
 function DeliveryDetailsPage({ delivery, onBack, onTrack, onPay, isPaying }) {
-  const paymentStatus = delivery.paymentStatus ?? delivery.payment_status;
-  const deliveryStatus = paymentStatus === "paid" ? "delivered" : delivery.status;
+  const paymentStatus = getDeliveryPaymentStatus(delivery);
+  const deliveryStatus = getDisplayDeliveryStatus(delivery);
   const status = String(deliveryStatus || "searching")
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());

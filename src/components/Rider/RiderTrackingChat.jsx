@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
 import { riderApiRequest } from "../../lib/riderApi";
-
-const CHAT_ENABLED_STATUSES = ["arrived", "collected"];
+import { isChatAvailableStatus } from "../../../shared/deliveryState.js";
 
 export default function RiderTrackingChat({ deliveryId, status }) {
   const [messages, setMessages] = useState([]);
@@ -10,7 +9,7 @@ export default function RiderTrackingChat({ deliveryId, status }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const chatEnabled = CHAT_ENABLED_STATUSES.includes(status);
+  const chatEnabled = isChatAvailableStatus(status);
 
   useEffect(() => {
     if (!deliveryId || !chatEnabled || !isOpen) {

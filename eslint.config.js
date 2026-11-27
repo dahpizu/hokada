@@ -39,7 +39,7 @@ export default [
     },
   },
   {
-    files: ['server/**/*.js', 'src/lib/server/**/*.js'],
+    files: ['server/**/*.js', 'shared/**/*.js', 'tests/**/*.js'],
     languageOptions: {
       globals: globals.node,
     },

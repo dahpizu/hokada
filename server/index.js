@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import WebSocket from "ws";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
+import { isChatAvailableStatus } from "../shared/deliveryState.js";
 
 dotenv.config();
 
@@ -616,7 +617,6 @@ const RIDER_ACTIVE_STATUSES = [
   "arrived_at_dropoff",
 ];
 const RIDER_AVAILABLE_STATUSES = ["searching", "pending"];
-const CHAT_ENABLED_STATUSES = ["arrived", "collected"];
 const DELIVERY_SELECT =
   "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at";
 
@@ -751,7 +751,7 @@ app.get("/api/rider/deliveries/:deliveryId/messages", chatLimiter, requireRider,
       .maybeSingle();
 
     if (deliveryError) throw deliveryError;
-    if (!delivery || !CHAT_ENABLED_STATUSES.includes(delivery.status)) {
+    if (!delivery || !isChatAvailableStatus(delivery.status)) {
       return res.status(403).json({ error: "Chat is unavailable for this delivery." });
     }
 
@@ -791,7 +791,7 @@ app.post("/api/rider/deliveries/:deliveryId/messages", chatLimiter, requireRider
       .maybeSingle();
 
     if (deliveryError) throw deliveryError;
-    if (!delivery || !CHAT_ENABLED_STATUSES.includes(delivery.status)) {
+    if (!delivery || !isChatAvailableStatus(delivery.status)) {
       return res.status(403).json({ error: "Chat is unavailable for this delivery." });
     }
 
@@ -1339,7 +1339,7 @@ app.get("/api/deliveries/:deliveryId/messages", chatLimiter, requireCustomer, as
       .maybeSingle();
 
     if (deliveryError) throw deliveryError;
-    if (!delivery || !CHAT_ENABLED_STATUSES.includes(delivery.status)) {
+    if (!delivery || !isChatAvailableStatus(delivery.status)) {
       return res.status(403).json({ error: "Chat is unavailable for this delivery." });
     }
 
@@ -1376,7 +1376,7 @@ app.post("/api/deliveries/:deliveryId/messages", chatLimiter, requireCustomer, a
       .maybeSingle();
 
     if (deliveryError) throw deliveryError;
-    if (!delivery || !CHAT_ENABLED_STATUSES.includes(delivery.status)) {
+    if (!delivery || !isChatAvailableStatus(delivery.status)) {
       return res.status(403).json({ error: "Chat is unavailable for this delivery." });
     }
 

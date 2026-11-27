@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
 import { customerApiRequest } from "../lib/customerApi";
-
-const CHAT_ENABLED_STATUSES = ["arrived", "collected"];
+import { isChatAvailableStatus } from "../../shared/deliveryState.js";
 
 export default function TrackingChat({ deliveryId, status, paymentStatus }) {
   const [messages, setMessages] = useState([]);
@@ -10,8 +9,7 @@ export default function TrackingChat({ deliveryId, status, paymentStatus }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const chatEnabled =
-    CHAT_ENABLED_STATUSES.includes(status) && paymentStatus !== "paid";
+  const chatEnabled = isChatAvailableStatus(status) && paymentStatus !== "paid";
 
   useEffect(() => {
     if (!deliveryId || !chatEnabled || !isOpen) {
