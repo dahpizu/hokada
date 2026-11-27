@@ -1134,9 +1134,33 @@ function App() {
             deliveries={deliveries}
             onBack={goHome}
             onBook={openBooking}
-            onSelectDelivery={(delivery) => {
-              setSelectedDelivery(delivery);
-              setPage("delivery-details");
+            onSelectDelivery={async (delivery) => {
+              try {
+                if (!supabase || !customerUser?.id) {
+                  throw new Error("Please sign in again to refresh this delivery.");
+                }
+
+                const { data, error } = await supabase
+                  .from("deliveries")
+                  .select("id, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, delivery_type, package_type, recipient_name, recipient_phone, notes, status, delivery_fee, payment_status, created_at, rider_name")
+                  .eq("id", delivery.id)
+                  .eq("customer_id", customerUser.id)
+                  .single();
+
+                if (error) throw error;
+
+                const latestDelivery = mapDeliveryHistory(data);
+                setDeliveries((previous) =>
+                  previous.map((item) =>
+                    item.id === latestDelivery.id ? latestDelivery : item
+                  )
+                );
+                setSelectedDelivery(latestDelivery);
+                setPage("delivery-details");
+              } catch (error) {
+                console.error("Could not refresh delivery details:", error);
+                alert(error?.message || "Could not refresh this delivery. Please try again.");
+              }
             }}
           />
         )}
