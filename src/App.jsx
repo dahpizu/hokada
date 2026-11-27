@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import GoogleAddressInput from "./components/GoogleAddressInput";
 import AddressLocationSection from "./components/AddressLocationSection";
 import TrackingChat from "./components/TrackingChat";
 import CustomerAuth from "./components/CustomerAuth";
 import { supabase } from "./lib/supabase";
+import { customerApiRequest as paymentApiRequest } from "./lib/customerApi";
 
 import {
   ArrowLeft,
@@ -29,6 +30,8 @@ import {
 
 import "./App.css";
 
+const TrackingMap = lazy(() => import("./components/TrackingMap"));
+
 const PACKAGE_FEES = {
   Small: 0,
   Medium: 300,
@@ -40,91 +43,7 @@ const PRICE_PER_KM = 150;
 const EXPRESS_FEE = 500;
 const WAITING_FEE = 200;
 
-const DEMO_RIDER = {
-  name: "Chinedu Okafor",
-  phone: "0803 456 7890",
-  bike: "Honda Ace",
-  plate: "KJA 482 XY",
-  rating: "4.9",
-};
-
-const PAYMENT_API_URL = (
-  import.meta.env.VITE_PAYMENT_API_URL || "http://localhost:4242"
-).replace(/\/+$/, "");
-
 const PAYMENT_ELIGIBLE_STATUSES = ["arrived_at_dropoff", "delivered"];
-
-/*
- * =========================================================
- * ADDRESS GEOCODING
- * =========================================================
- */
-
-async function geocodeAddress(address) {
-  const isIkotunIgandoArea =
-    /ikotun|igando|idimu|egbe|isheri/i.test(address);
-
-  const params = new URLSearchParams({
-    q: `${address}, Lagos, Nigeria`,
-    limit: "1",
-    lang: "en",
-    lat: isIkotunIgandoArea ? "6.55" : "6.5244",
-    lon: isIkotunIgandoArea ? "3.27" : "3.3792",
-    dedupe: "1",
-  });
-
-  if (isIkotunIgandoArea) {
-    params.set("bbox", "3.18,6.45,3.36,6.68");
-    params.set("zoom", "13");
-  }
-
-  const response = await fetch(
-    `https://photon.komoot.io/api/?${params.toString()}`,
-    { headers: { Accept: "application/json" } }
-  );
-
-  if (!response.ok) {
-    throw new Error("Unable to search for this location. Please try again.");
-  }
-
-  const data = await response.json();
-  const feature = data.features?.[0];
-  const coordinates = feature?.geometry?.coordinates;
-
-  if (
-    !feature ||
-    !coordinates ||
-    !Number.isFinite(Number(coordinates[0])) ||
-    !Number.isFinite(Number(coordinates[1]))
-  ) {
-    throw new Error(
-      `Location not found: ${address}. Please try a more specific address.`
-    );
-  }
-
-  const p = feature.properties || {};
-  const parts = [
-    p.name,
-    p.street,
-    p.district,
-    p.city || p.locality,
-    p.state,
-    p.country,
-  ].filter(Boolean);
-
-  const displayName = parts.filter(
-    (part, index) =>
-      parts.findIndex(
-        (other) => other.toLowerCase() === part.toLowerCase()
-      ) === index
-  ).join(", ");
-
-  return {
-    lat: Number(coordinates[1]),
-    lng: Number(coordinates[0]),
-    displayName: displayName || address,
-  };
-}
 
 /*
  * =========================================================
@@ -211,43 +130,38 @@ function mapDeliveryHistory(delivery) {
   };
 }
 
+
+async function fetchAssignedRiderProfile(deliveryId) {
+  if (!supabase || !deliveryId) return null;
+
+  const { data, error } = await supabase.rpc(
+    "get_delivery_rider_profile",
+    { p_delivery_id: deliveryId }
+  );
+
+  if (error) {
+    console.error("Could not load assigned rider profile:", error);
+    return null;
+  }
+
+  const profile = Array.isArray(data) ? data[0] : data;
+
+  if (!profile) return null;
+
+  return {
+    name: profile.full_name || null,
+    phone: profile.phone || null,
+    bike: profile.bike_model || null,
+    plate: profile.plate_number || null,
+    rating: profile.rating ?? null,
+  };
+}
+
 /*
  * =========================================================
  * AUTHENTICATED PAYMENT API
  * =========================================================
  */
-
-async function paymentApiRequest(path, options = {}) {
-  if (!supabase) {
-    throw new Error("HOKADA could not connect to Supabase.");
-  }
-
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-
-  if (sessionError || !session?.access_token) {
-    throw new Error("Please sign in again before continuing.");
-  }
-
-  const response = await fetch(`${PAYMENT_API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-      ...options.headers,
-    },
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.error || "The payment request failed.");
-  }
-
-  return data;
-}
 
 /*
  * =========================================================
@@ -547,17 +461,6 @@ function App() {
    * =========================================================
    */
 
-  const estimatedPricing = useMemo(
-    () =>
-      calculateDeliveryFee(
-        booking.pickup,
-        booking.dropoff,
-        booking.packageSize,
-        booking.deliveryType
-      ),
-    [booking.pickup, booking.dropoff, booking.packageSize, booking.deliveryType]
-  );
-
   const pricing = serverQuote?.pricing || null;
 
   useEffect(() => {
@@ -634,6 +537,9 @@ function App() {
   useEffect(() => {
     if (!supabase || !currentBooking?.id) return;
 
+    let active = true;
+    let lastFetchedRiderId = null;
+
     const channel = supabase
       .channel(`customer-delivery:${currentBooking.id}`)
       .on(
@@ -646,14 +552,13 @@ function App() {
         },
         (payload) => {
           const updatedDelivery = payload.new;
-          const riderName = updatedDelivery.rider_name;
+          const riderId = updatedDelivery.rider_id || null;
+          const riderChanged = riderId !== lastFetchedRiderId;
 
-          const updatedRider = riderName
-            ? {
-                ...DEMO_RIDER,
-                name: riderName,
-              }
-            : null;
+          if (riderChanged) {
+            lastFetchedRiderId = riderId;
+            setAssignedRider(null);
+          }
 
           setCurrentBooking((previous) => {
             if (!previous) return previous;
@@ -662,19 +567,16 @@ function App() {
               ...previous,
               status: updatedDelivery.status,
               delivery: {
+                ...previous.delivery,
                 id: updatedDelivery.id,
                 status: updatedDelivery.status,
                 payment_status: updatedDelivery.payment_status,
                 delivery_fee: updatedDelivery.delivery_fee,
                 rider_name: updatedDelivery.rider_name,
               },
-              rider: updatedRider || previous.rider || null,
+              rider: riderChanged ? null : previous.rider,
             };
           });
-
-          if (updatedRider) {
-            setAssignedRider(updatedRider);
-          }
 
           setDeliveries((previous) =>
             previous.map((item) =>
@@ -703,6 +605,21 @@ function App() {
               : previous
           );
 
+          if (riderId && riderChanged) {
+            fetchAssignedRiderProfile(updatedDelivery.id).then((profile) => {
+              if (!active || lastFetchedRiderId !== riderId || !profile) {
+                return;
+              }
+
+              setAssignedRider(profile);
+              setCurrentBooking((previous) =>
+                previous?.id === updatedDelivery.id
+                  ? { ...previous, rider: profile }
+                  : previous
+              );
+            });
+          }
+
           if (
             [
               "accepted",
@@ -722,6 +639,7 @@ function App() {
       .subscribe();
 
     return () => {
+      active = false;
       supabase.removeChannel(channel);
     };
   }, [currentBooking?.id]);
@@ -904,39 +822,10 @@ function App() {
 
     try {
       setIsPaying(true);
-
-      const { data: delivery, error: deliveryError } = await supabase
-        .from("deliveries")
-        .select("id, customer_id, status, payment_status")
-        .eq("id", deliveryId)
-        .eq("customer_id", customerUser.id)
-        .single();
-
-      if (deliveryError || !delivery) {
-        throw new Error("Could not find your delivery.");
-      }
-
-      if (!PAYMENT_ELIGIBLE_STATUSES.includes(delivery.status)) {
-        throw new Error(
-          "Payment becomes available when your rider reaches the drop-off location."
-        );
-      }
-
-      if (delivery.payment_status === "paid") {
-        throw new Error("This delivery has already been paid for.");
-      }
-
-      if (!customerUser.email) {
-        throw new Error(
-          "Your account has no email address for Paystack checkout."
-        );
-      }
-
       const payment = await paymentApiRequest("/api/payments/initialize", {
         method: "POST",
         body: JSON.stringify({
-          email: customerUser.email,
-          deliveryId: delivery.id,
+          deliveryId,
         }),
       });
 
@@ -968,7 +857,7 @@ function App() {
 
       const { data: delivery, error } = await supabase
         .from("deliveries")
-        .select("id, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, created_at, delivery_fee, payment_status, rider_name")
+        .select("id, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, recipient_name, recipient_phone, package_type, delivery_type, notes, status, created_at, delivery_fee, payment_status, rider_name")
         .eq("id", deliveryId)
         .eq("customer_id", customerUser.id)
         .single();
@@ -995,6 +884,8 @@ function App() {
         total: Number(delivery.delivery_fee),
       };
 
+      const restoredRider = await fetchAssignedRiderProfile(delivery.id);
+
       const restoredBooking = {
         id: delivery.id,
         pickup: delivery.pickup_address,
@@ -1007,19 +898,22 @@ function App() {
         pricing: restoredPricing,
         status: delivery.status,
         createdAt: delivery.created_at,
+        pickupLat: delivery.pickup_lat,
+        pickupLng: delivery.pickup_lng,
+        dropoffLat: delivery.dropoff_lat,
+        dropoffLng: delivery.dropoff_lng,
         delivery: {
           id: delivery.id,
           status: delivery.status,
           payment_status: delivery.payment_status,
           delivery_fee: delivery.delivery_fee,
           rider_name: delivery.rider_name,
+          pickup_lat: delivery.pickup_lat,
+          pickup_lng: delivery.pickup_lng,
+          dropoff_lat: delivery.dropoff_lat,
+          dropoff_lng: delivery.dropoff_lng,
         },
-        rider: delivery.rider_name
-          ? {
-              ...DEMO_RIDER,
-              name: delivery.rider_name,
-            }
-          : null,
+        rider: restoredRider,
       };
 
       setBooking({
@@ -1065,43 +959,15 @@ function App() {
 
     if (!confirmed) return;
 
-    const cancellableStatuses = [
-      "searching",
-      "pending",
-      "accepted",
-      "in_transit",
-      "arrived",
-      "collected",
-      "going_to_dropoff",
-      "arrived_at_dropoff",
-    ];
-
     try {
-      const { data, error } = await supabase
-        .from("deliveries")
-        .update({
-          status: "cancelled",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", currentBooking.id)
-        .eq("customer_id", customerUser.id)
-        .eq("payment_status", "unpaid")
-        .in("status", cancellableStatuses)
-        .select("id, status")
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        alert(
-          "Cancellation was not accepted. The delivery may be paid, completed, or restricted by database permissions. Please refresh and check the status."
-        );
-        return;
-      }
+      const { delivery } = await paymentApiRequest(
+        `/api/deliveries/${encodeURIComponent(currentBooking.id)}/cancel`,
+        { method: "POST", body: "{}" }
+      );
 
       setDeliveries((previous) =>
         previous.map((item) =>
-          item.id === data.id
+          item.id === delivery.id
             ? { ...item, status: "cancelled", paymentStatus: "unpaid" }
             : item
         )
@@ -1221,8 +1087,9 @@ function App() {
           <BookingPage
             booking={booking}
             updateBooking={updateBooking}
-            deliveries={deliveries}
             pricing={pricing}
+            quoteLoading={quoteLoading}
+            quoteError={quoteError}
             onBack={goHome}
             onContinue={handleContinueToReview}
           />
@@ -1442,270 +1309,123 @@ function HomePage({ onBook, onDeliveries, onProfile }) {
  * =========================================================
  */
 
-function BookingPage({ booking, updateBooking, deliveries = [], pricing, quoteLoading, quoteError, onBack, onContinue }) {
-  function scrollToBookingSection(labelText) {
-    window.requestAnimationFrame(() => {
-      const target = Array.from(
-        document.querySelectorAll(".form-section label")
-      ).find(
-        (label) =>
-          label.textContent.trim().toLowerCase() ===
-          labelText.toLowerCase()
-      );
-
-      target?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    });
-  }
-  const [hiddenSavedAddresses, setHiddenSavedAddresses] = useState(() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem("hokada-hidden-saved-addresses-v1") || "[]"
-      );
-    } catch {
-      return [];
-    }
-  });
-
-  function deleteSavedAddress(item) {
-    const confirmed = window.confirm(
-      `Remove this saved address from your list?\n\n${item.address}\n\nYour delivery history will not be deleted.`
-    );
-    if (!confirmed) return;
-
-    const next = [...new Set([...hiddenSavedAddresses, item.key])];
-    setHiddenSavedAddresses(next);
-
-    try {
-      localStorage.setItem(
-        "hokada-hidden-saved-addresses-v1",
-        JSON.stringify(next)
-      );
-    } catch (error) {
-      console.error("Could not save hidden addresses:", error);
-      alert("The address could not be hidden permanently in this browser.");
-    }
-  }
-
-  const savedAddresses = [];
-  const seenAddresses = new Set();
-
-  deliveries.forEach((delivery) => {
-    [
-      {
-        address: delivery.pickup,
-        lat: delivery.pickupLat,
-        lng: delivery.pickupLng,
-      },
-      {
-        address: delivery.dropoff,
-        lat: delivery.dropoffLat,
-        lng: delivery.dropoffLng,
-      },
-    ].forEach((item) => {
-      const address = String(item.address || "").trim();
-      const lat = Number(item.lat);
-      const lng = Number(item.lng);
-      const key = address.toLowerCase();
-
-      if (
-        address &&
-        item.lat !== null &&
-        item.lat !== undefined &&
-        item.lng !== null &&
-        item.lng !== undefined &&
-        Number.isFinite(lat) &&
-        Number.isFinite(lng) &&
-        lat >= -90 &&
-        lat <= 90 &&
-        lng >= -180 &&
-        lng <= 180 &&
-        !seenAddresses.has(key)
-      ) {
-        seenAddresses.add(key);
-        savedAddresses.push({
-          key,
-          address,
-          coords: { lat, lng },
-        });
-      }
-    });
-  });
-
-  const visibleSavedAddresses = savedAddresses.filter(
-    (item) => !hiddenSavedAddresses.includes(item.key)
-  );
+function BookingPage({ booking, updateBooking, pricing, quoteLoading, quoteError, onBack, onContinue }) {
+  const packageSizes = ["Small", "Medium", "Large"];
 
   return (
     <div className="page">
       <PageHeader
-        title="Book a rider"
-        subtitle="Tell us where your package is going."
+        title="New delivery"
+        subtitle="Add your route and recipient to get a delivery quote."
         onBack={onBack}
       />
 
-      <section className="form-card">
-        <AddressLocationSection
-          title="Pickup address"
-          value={booking.pickup}
-          coords={booking.pickupCoords}
-          savedAddresses={visibleSavedAddresses}
-          onDeleteSavedAddress={deleteSavedAddress}
-          onChange={(value) => updateBooking("pickup", value)}
-          onSelect={({ address, coords }) => {
-            if (address && address !== booking.pickup) {
-              updateBooking("pickup", address);
-            }
-            updateBooking("pickupCoords", coords);
-          }}
-        />
-
-        <AddressLocationSection
-          title="Drop-off address"
-          value={booking.dropoff}
-          coords={booking.dropoffCoords}
-          savedAddresses={visibleSavedAddresses}
-          onDeleteSavedAddress={deleteSavedAddress}
-          onChange={(value) => updateBooking("dropoff", value)}
-          onSelect={({ address, coords }) => {
-            if (address && address !== booking.dropoff) {
-              updateBooking("dropoff", address);
-            }
-            updateBooking("dropoffCoords", coords);
-          }}
-        />
-
-        <div className="form-divider"></div>
-
-        <div className="form-section">
-          <label>Recipient name</label>
-
-          <div className="input-with-icon">
-            <User size={19} />
-
-            <input
-              value={booking.recipientName}
-              onChange={(event) =>
-                updateBooking("recipientName", event.target.value)
-              }
-              placeholder="Who is receiving it?"
-            />
+      <section className="simple-booking-card">
+        <div className="simple-booking-route">
+          <div className="simple-booking-field">
+            <label htmlFor="booking-pickup">Pickup</label>
+            <div className="simple-booking-address">
+              <span className="simple-booking-dot pickup" aria-hidden="true" />
+              <GoogleAddressInput
+                id="booking-pickup"
+                value={booking.pickup}
+                placeholder="Search pickup address"
+                onChange={(value) => updateBooking("pickup", value)}
+                onSelect={({ address, coords }) => {
+                  updateBooking("pickup", address);
+                  updateBooking("pickupCoords", coords);
+                }}
+              />
+            </div>
           </div>
+
+          <div className="simple-booking-field">
+            <label htmlFor="booking-dropoff">Drop-off</label>
+            <div className="simple-booking-address">
+              <span className="simple-booking-dot dropoff" aria-hidden="true" />
+              <GoogleAddressInput
+                id="booking-dropoff"
+                value={booking.dropoff}
+                placeholder="Search drop-off address"
+                onChange={(value) => updateBooking("dropoff", value)}
+                onSelect={({ address, coords }) => {
+                  updateBooking("dropoff", address);
+                  updateBooking("dropoffCoords", coords);
+                }}
+              />
+            </div>
+          </div>
+          <p className="simple-booking-help">Choose a search result to confirm each location.</p>
         </div>
 
-        <div className="form-section">
-          <label>Recipient phone</label>
+        <div className="simple-booking-fields-grid">
+          <label className="simple-booking-field">
+            <span>Recipient name</span>
+            <input
+              value={booking.recipientName}
+              onChange={(event) => updateBooking("recipientName", event.target.value)}
+              placeholder="Who will receive it?"
+              autoComplete="name"
+            />
+          </label>
 
-          <div className="input-with-icon">
-            <Phone size={19} />
-
+          <label className="simple-booking-field">
+            <span>Recipient phone</span>
             <input
               value={booking.recipientPhone}
-              onChange={(event) =>
-                updateBooking("recipientPhone", event.target.value)
-              }
+              onChange={(event) => updateBooking("recipientPhone", event.target.value)}
               placeholder="08012345678"
               type="tel"
               inputMode="tel"
               autoComplete="tel"
               maxLength={14}
             />
-          </div>
-        </div>
-      </section>
-
-      <section className="form-card">
-        <div className="form-section">
-          <label>Package size</label>
-
-          <div className="choice-grid">
-            {["Small", "Medium", "Large"].map((size) => (
-              <button
-                key={size}
-                type="button"
-                className={`choice-button ${
-                  booking.packageSize === size ? "active" : ""
-                }`}
-                onClick={() => {
-                  updateBooking("packageSize", size);
-                  scrollToBookingSection("Delivery speed");
-                }}
-              >
-                <Package size={19} />
-                <span>{size}</span>
-
-                <small>
-                  {PACKAGE_FEES[size] === 0
-                    ? "No extra fee"
-                    : `+${formatNaira(PACKAGE_FEES[size])}`}
-                </small>
-              </button>
-            ))}
-          </div>
+          </label>
         </div>
 
-        <div className="form-section">
-          <label>Delivery speed</label>
-
-          <div className="delivery-type-grid">
-            <button
-              type="button"
-              className={`delivery-type-card ${
-                booking.deliveryType === "Standard" ? "active" : ""
-              }`}
-              onClick={() => {
-                updateBooking("deliveryType", "Standard");
-                scrollToBookingSection("Delivery notes");
-              }}
+        <div className="simple-booking-options">
+          <label className="simple-booking-field">
+            <span>Package size</span>
+            <select
+              value={booking.packageSize}
+              onChange={(event) => updateBooking("packageSize", event.target.value)}
             >
-              <div className="delivery-type-icon">
-                <Clock3 size={20} />
-              </div>
+              {packageSizes.map((size) => (
+                <option key={size} value={size}>
+                  {size}{PACKAGE_FEES[size] ? ` · +${formatNaira(PACKAGE_FEES[size])}` : " · included"}
+                </option>
+              ))}
+            </select>
+          </label>
 
-              <div>
-                <strong>Standard</strong>
-                <span>Regular delivery</span>
-              </div>
-
-              <small>Included</small>
-            </button>
-
-            <button
-              type="button"
-              className={`delivery-type-card ${
-                booking.deliveryType === "Express" ? "active" : ""
-              }`}
-              onClick={() => {
-                updateBooking("deliveryType", "Express");
-                scrollToBookingSection("Delivery notes");
-              }}
-            >
-              <div className="delivery-type-icon express">
-                <Zap size={20} />
-              </div>
-
-              <div>
-                <strong>Express</strong>
-                <span>Priority rider</span>
-              </div>
-
-              <small>+{formatNaira(EXPRESS_FEE)}</small>
-            </button>
+          <div className="simple-booking-field">
+            <span>Delivery speed</span>
+            <div className="simple-booking-speed" role="group" aria-label="Delivery speed">
+              {["Standard", "Express"].map((speed) => (
+                <button
+                  key={speed}
+                  type="button"
+                  className={booking.deliveryType === speed ? "active" : ""}
+                  onClick={() => updateBooking("deliveryType", speed)}
+                  aria-pressed={booking.deliveryType === speed}
+                >
+                  {speed}
+                  <small>{speed === "Standard" ? "Included" : `+${formatNaira(EXPRESS_FEE)}`}</small>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="form-section">
-          <label>Delivery notes</label>
-
+        <details className="simple-booking-notes">
+          <summary>Add delivery note <span>Optional</span></summary>
           <textarea
             value={booking.notes}
             onChange={(event) => updateBooking("notes", event.target.value)}
-            placeholder="Any special instructions for the rider?"
-            rows="4"
+            placeholder="Anything the rider should know?"
+            rows="3"
           />
-        </div>
+        </details>
       </section>
 
       <section className="live-price-card" aria-live="polite">
@@ -1727,13 +1447,13 @@ function BookingPage({ booking, updateBooking, deliveries = [], pricing, quoteLo
           </div>
         )}
 
-        {!pricing && !quoteLoading && (
+        {!pricing && !quoteLoading && !quoteError && (
           <p className="live-price-hint">
-            Confirm your pickup and drop-off locations to see your delivery fee.
+            Select both locations to see your delivery fee.
           </p>
         )}
 
-        {!pricing && quoteError && (
+        {quoteError && (
           <p className="live-price-hint live-price-error">
             {quoteError}
           </p>
@@ -1743,8 +1463,9 @@ function BookingPage({ booking, updateBooking, deliveries = [], pricing, quoteLo
       <button
         className="primary-button full-width bottom-action"
         onClick={onContinue}
+        disabled={quoteLoading || !pricing}
       >
-        Review delivery
+        Review booking
         <ChevronRight size={19} />
       </button>
     </div>
@@ -1950,7 +1671,7 @@ function TrackingPage({
   onPayDelivery,
   isPaying,
 }) {
-  const delivery = booking?.delivery;
+  const delivery = booking?.delivery || booking;
   const status = delivery?.status;
   const isDelivered = status === "delivered";
   const paymentIsPaid = delivery?.payment_status === "paid";
@@ -2061,17 +1782,17 @@ function TrackingPage({
 
             <div>
               <span>Delivered by</span>
-              <strong>{rider?.name || DEMO_RIDER.name}</strong>
+              <strong>{rider?.name || "HOKADA rider"}</strong>
 
               <small>
-                {rider?.bike || DEMO_RIDER.bike} •{" "}
-                {rider?.plate || DEMO_RIDER.plate}
+                {[rider?.bike, rider?.plate].filter(Boolean).join(" • ") ||
+                  "Vehicle details unavailable"}
               </small>
             </div>
 
             <div className="delivery-rating">
               <span>★</span>
-              <strong>{rider?.rating || DEMO_RIDER.rating}</strong>
+              <strong>{rider?.rating ?? "Not rated yet"}</strong>
             </div>
           </div>
         </div>
@@ -2150,6 +1871,26 @@ function TrackingPage({
           </div>
         </div>
 
+
+        {delivery?.id && (
+          <Suspense fallback={<div className="tracking-map-loading">Loading map…</div>}>
+          <TrackingMap
+            deliveryId={delivery.id}
+            pickup={{
+              lat: delivery.pickup_lat ?? booking?.pickupLat ?? booking?.pickupCoords?.lat,
+              lng: delivery.pickup_lng ?? booking?.pickupLng ?? booking?.pickupCoords?.lng,
+              label: booking?.pickup || delivery.pickup_address || "Pickup location",
+            }}
+            dropoff={{
+              lat: delivery.dropoff_lat ?? booking?.dropoffLat ?? booking?.dropoffCoords?.lat,
+              lng: delivery.dropoff_lng ?? booking?.dropoffLng ?? booking?.dropoffCoords?.lng,
+              label: booking?.dropoff || delivery.dropoff_address || "Drop-off location",
+            }}
+            riderName={rider?.name || booking?.riderName || delivery.rider_name || "HOKADA rider"}
+            status={status}
+          />
+          </Suspense>
+        )}
 
         <div className="tracking-status-card">
           <div className="tracking-status-icon">{currentStatus.icon}</div>
@@ -2329,20 +2070,31 @@ function TrackingPage({
 
           <div className="rider-details">
             <span>Your rider</span>
-            <strong>{rider?.name || DEMO_RIDER.name}</strong>
+            <strong>{rider?.name || "HOKADA rider"}</strong>
 
             <small>
-              {rider?.bike || DEMO_RIDER.bike} •{" "}
-              {rider?.plate || DEMO_RIDER.plate}
+              {[rider?.bike, rider?.plate].filter(Boolean).join(" • ") ||
+                "Vehicle details unavailable"}
             </small>
           </div>
 
-          <a
-            className="call-rider-button"
-            href={`tel:${rider?.phone || DEMO_RIDER.phone}`}
-          >
-            <Phone size={18} />
-          </a>
+          {rider?.phone ? (
+            <a
+              className="call-rider-button"
+              href={`tel:${rider.phone}`}
+              aria-label="Call rider"
+            >
+              <Phone size={18} />
+            </a>
+          ) : (
+            <span
+              className="call-rider-button"
+              aria-label="Rider phone number unavailable"
+              title="Rider phone number unavailable"
+            >
+              <Phone size={18} />
+            </span>
+          )}
         </div>
 
         <TrackingChat deliveryId={delivery?.id} status={status} />

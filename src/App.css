@@ -6745,6 +6745,194 @@ body {
   }
 }
 
+/* Simplified delivery booking form */
+.tracking-map-loading {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: #f6f8f6;
+  color: #687068;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.simple-booking-card {
+  display: grid;
+  gap: 22px;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid rgba(16, 20, 16, 0.08);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 12px 34px rgba(16, 20, 16, 0.05);
+}
+
+.simple-booking-route {
+  display: grid;
+  gap: 14px;
+}
+
+.simple-booking-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: #454b45;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.simple-booking-address {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 54px;
+  padding: 0 14px;
+  border: 1px solid #e6eae6;
+  border-radius: 13px;
+  background: #f8faf8;
+}
+
+.simple-booking-dot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+  border-radius: 50%;
+}
+
+.simple-booking-dot.pickup {
+  background: #19b85a;
+}
+
+.simple-booking-dot.dropoff {
+  background: #18221a;
+}
+
+.simple-booking-address:focus-within {
+  border-color: #19b85a;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(25, 184, 90, 0.08);
+}
+
+.simple-booking-address .google-address-autocomplete {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+.simple-booking-address .google-address-input,
+.simple-booking-field > input,
+.simple-booking-field > select {
+  width: 100%;
+  min-width: 0;
+  height: 52px;
+  padding: 0 13px;
+  border: 1px solid #e6eae6;
+  border-radius: 13px;
+  outline: none;
+  background: #f8faf8;
+  color: #18221a;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.simple-booking-address .google-address-input {
+  height: 50px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.simple-booking-field > input:focus,
+.simple-booking-field > select:focus,
+.simple-booking-address .google-address-input:focus {
+  border-color: #19b85a;
+}
+
+.simple-booking-help {
+  margin: -5px 0 0;
+  color: #858c85;
+  font-size: 12px;
+}
+
+.simple-booking-fields-grid,
+.simple-booking-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.simple-booking-speed {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.simple-booking-speed button {
+  display: grid;
+  gap: 4px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 1px solid #e6eae6;
+  border-radius: 12px;
+  background: #f8faf8;
+  color: #454b45;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.simple-booking-speed button.active {
+  border-color: #19b85a;
+  background: rgba(25, 184, 90, 0.08);
+  color: #137d40;
+}
+
+.simple-booking-speed small {
+  color: #858c85;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.simple-booking-notes {
+  border-top: 1px solid #edf0ed;
+  padding-top: 15px;
+  color: #454b45;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.simple-booking-notes summary {
+  cursor: pointer;
+}
+
+.simple-booking-notes summary span {
+  margin-left: 6px;
+  color: #858c85;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.simple-booking-notes textarea {
+  margin-top: 12px;
+}
+
+.bottom-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 600px) {
+  .simple-booking-fields-grid,
+  .simple-booking-options {
+    grid-template-columns: 1fr;
+    gap: 17px;
+  }
+}
+
 /* Compact current-location button */
 .hokada-address-map-search .hokada-place-suggestion {
   display: inline-flex;
@@ -6781,4 +6969,30 @@ body {
 .live-price-error {
   color: #dc2626;
   opacity: 1;
+}
+
+/* Rider password recovery visibility fix */
+.rider-auth-label-row {
+  width: 100%;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rider-auth-label-row .rider-forgot-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 2px;
+  color: #128b43;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  visibility: visible;
+  opacity: 1;
+  position: relative;
+  z-index: 2;
 }

@@ -1,18 +1,9 @@
-import { useEffect, useState } from "react";
-import { Bike, CheckCircle2, MapPin, Phone, User } from "lucide-react";
+import { Bike, CheckCircle2, Phone, User } from "lucide-react";
 
-function RiderMatching({ onComplete }) {
-  const [status, setStatus] = useState("searching");
+function RiderMatching({ rider = null, onComplete }) {
+  const hasAssignedRider = Boolean(rider?.name);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setStatus("found");
-    }, 2500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (status === "searching") {
+  if (!hasAssignedRider) {
     return (
       <div className="page centered-page">
         <div className="matching-card">
@@ -21,19 +12,18 @@ function RiderMatching({ onComplete }) {
           </div>
 
           <p className="eyebrow">HOKADA</p>
-
           <h1>Finding a rider...</h1>
 
           <p>
             We're looking for an available dispatch rider near your pickup
-            location.
+            location. We'll update you when a rider accepts your delivery.
           </p>
 
           <div className="loading-bar">
             <span></span>
           </div>
 
-          <small>This usually takes a few seconds.</small>
+          <small>Waiting for a confirmed rider assignment.</small>
         </div>
       </div>
     );
@@ -46,13 +36,8 @@ function RiderMatching({ onComplete }) {
           <CheckCircle2 size={44} />
         </div>
 
-        <p className="eyebrow">RIDER FOUND</p>
-
-        <h1>Your rider is on the way.</h1>
-
-        <p className="success-text">
-          Your delivery has been accepted by a HOKADA rider.
-        </p>
+        <p className="eyebrow">RIDER ASSIGNED</p>
+        <h1>Your rider has accepted the delivery.</h1>
 
         <div className="rider-card">
           <div className="rider-avatar">
@@ -61,8 +46,16 @@ function RiderMatching({ onComplete }) {
 
           <div className="rider-info">
             <span>Your rider</span>
-            <strong>Chinedu Okafor</strong>
-            <small>HOKADA Rider • 4.9 ★</small>
+            <strong>{rider.name}</strong>
+            <small>
+              {rider.rating != null
+                ? `HOKADA Rider • ${rider.rating} ★`
+                : "HOKADA Rider"}
+            </small>
+            <small>
+              {[rider.bike, rider.plate].filter(Boolean).join(" • ") ||
+                "Motorcycle details unavailable"}
+            </small>
           </div>
 
           <div className="bike-badge">
@@ -70,30 +63,24 @@ function RiderMatching({ onComplete }) {
           </div>
         </div>
 
-        <div className="tracking-card">
-          <div className="tracking-row">
-            <MapPin size={20} />
-
-            <div>
-              <span>Status</span>
-              <strong>Rider heading to pickup</strong>
+        {rider.phone && (
+          <div className="tracking-card">
+            <div className="tracking-row">
+              <Phone size={20} />
+              <div>
+                <span>Rider phone</span>
+                <strong>{rider.phone}</strong>
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="tracking-row">
-            <Phone size={20} />
-
-            <div>
-              <span>Rider phone</span>
-              <strong>0803 456 7890</strong>
-            </div>
-          </div>
-        </div>
-
-        <button className="primary-button" onClick={onComplete}>
-          Back to Home
-          <Bike size={21} />
-        </button>
+        {onComplete && (
+          <button className="primary-button" onClick={onComplete}>
+            Continue
+            <Bike size={21} />
+          </button>
+        )}
       </div>
     </div>
   );

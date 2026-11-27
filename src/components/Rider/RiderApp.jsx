@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import RiderLocationBroadcaster from "../RiderLocationBroadcaster";
-import { supabase } from "../../lib/supabase";
+import { riderSupabase as supabase } from "../../lib/supabase";
+import { riderApiRequest } from "../../lib/riderApi";
 import RiderTrackingChat from "./RiderTrackingChat";
 import RiderAuth from "./RiderAuth";
 import {
@@ -21,14 +22,6 @@ import {
   History,
 } from "lucide-react";
 
-const RIDER = {
-  name: "Chinedu Okafor",
-  phone: "0803 456 7890",
-  bike: "Honda Ace",
-  plate: "KJA 482 XY",
-  rating: "4.9",
-};
-
 const ACTIVE_STATUSES = [
   "accepted",
   "in_transit",
@@ -38,7 +31,6 @@ const ACTIVE_STATUSES = [
   "arrived_at_dropoff",
 ];
 
-const AVAILABLE_STATUSES = ["searching", "pending"];
 
 export default function RiderApp() {
   const [session, setSession] = useState(null);
@@ -63,6 +55,8 @@ export default function RiderApp() {
   const activeDeliveryRef = useRef(null);
   const riderProfileRef = useRef(null);
   const finalizingDeliveryRef = useRef(new Set());
+  const loadDeliveryRef = useRef(null);
+  const finalizePaidDeliveryRef = useRef(null);
 
   useEffect(() => {
     activeDeliveryRef.current = activeDelivery;
@@ -83,17 +77,7 @@ export default function RiderApp() {
 
     try {
       setProfileLoading(true);
-
-      const { data, error } = await supabase
-        .from("rider_profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Could not load rider profile:", error);
-        return null;
-      }
+      const { profile: data } = await riderApiRequest("/api/rider/profile");
 
       setRiderProfile(data);
       riderProfileRef.current = data;
@@ -125,23 +109,8 @@ export default function RiderApp() {
 
     try {
       setHistoryLoading(true);
-
-      const { data, error } = await supabase
-        .from("deliveries")
-        .select(
-          "id, pickup_address, dropoff_address, rider_earnings, updated_at, status"
-        )
-        .eq("rider_id", riderId)
-        .eq("status", "delivered")
-        .order("updated_at", { ascending: false })
-        .limit(20);
-
-      if (error) {
-        console.error("Could not load delivery history:", error);
-        return;
-      }
-
-      setDeliveryHistory(data || []);
+      const { deliveries } = await riderApiRequest("/api/rider/history");
+      setDeliveryHistory(deliveries || []);
     } catch (error) {
       console.error("Delivery history error:", error);
     } finally {
@@ -161,28 +130,10 @@ export default function RiderApp() {
     try {
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
-
-      const { data, error } = await supabase
-        .from("deliveries")
-        .select("rider_earnings, updated_at, status")
-        .eq("rider_id", riderId)
-        .eq("status", "delivered")
-        .gte("updated_at", startOfToday.toISOString());
-
-      if (error) {
-        console.error("Could not load today's rider stats:", error);
-        return;
-      }
-
-      const earnings = (data || []).reduce(
-        (total, delivery) => total + Number(delivery.rider_earnings || 0),
-        0
+      const result = await riderApiRequest(
+        `/api/rider/today-stats?start=${encodeURIComponent(startOfToday.toISOString())}`
       );
-
-      setTodayStats({
-        deliveries: data?.length || 0,
-        earnings,
-      });
+      setTodayStats(result);
     } catch (error) {
       console.error("Today's rider stats error:", error);
     }
@@ -241,6 +192,17 @@ export default function RiderApp() {
   async function handleLogout() {
     if (!supabase) return;
 
+    try {
+      await riderApiRequest("/api/rider/online-status", {
+        method: "POST",
+        body: JSON.stringify({ isOnline: false }),
+      });
+    } catch (error) {
+      console.error("Could not take rider offline before logout:", error);
+      setMessage("Could not safely go offline. Try again before logging out.");
+      return;
+    }
+
     const { error } = await supabase.auth.signOut();
 
     if (error) {
@@ -286,43 +248,8 @@ export default function RiderApp() {
         setMessage("");
       }
 
-      const { data, error } = await supabase
-        .from("deliveries")
-        .select(
-          "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at"
-        )
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (error) {
-        console.error("Could not load deliveries:", error);
-
-        if (showLoading) {
-          setMessage(error.message);
-          setLoading(false);
-        }
-
-        return;
-      }
-      console.log("HOKADA rider diagnostic:", {
-        riderId: currentRiderId,
-        deliveryCount: data?.length ?? 0,
-        deliveries: (data || []).map((delivery) => ({
-          id: delivery.id,
-          status: delivery.status,
-          payment_status: delivery.payment_status,
-          rider_id: delivery.rider_id,
-        })),
-      });
-      /*
-       * Find a delivery already assigned to this rider.
-       */
-
-      const active = (data || []).find(
-        (delivery) =>
-          delivery.rider_id === currentRiderId &&
-          ACTIVE_STATUSES.includes(delivery.status)
-      );
+      const { activeDelivery: active, availableDelivery: available } =
+        await riderApiRequest("/api/rider/deliveries");
 
       if (active) {
         setActiveDelivery((previous) => {
@@ -351,42 +278,11 @@ export default function RiderApp() {
           active.status === "arrived_at_dropoff" &&
           active.payment_status === "paid"
         ) {
-          void finalizePaidDelivery(active, currentRiderId);
+          void finalizePaidDeliveryRef.current?.(active, currentRiderId);
         }
 
         return;
       }
-
-      /*
-       * Find an unassigned delivery.
-       *
-       * Show eligible unassigned deliveries regardless of payment status.
-       * Payment is collected at drop-off and verified by the backend.
-       * Cancelled and already assigned deliveries are not available.
-       */
-
-      const { data: declinedRows, error: declinedError } = await supabase
-        .from("rider_declined_deliveries")
-        .select("delivery_id")
-        .eq("rider_id", currentRiderId);
-
-      if (declinedError) {
-        console.error("Could not load declined requests:", declinedError);
-        setMessage(declinedError.message);
-        if (showLoading) setLoading(false);
-        return;
-      }
-
-      const declinedIds = new Set(
-        (declinedRows || []).map((row) => row.delivery_id)
-      );
-
-      const available = (data || []).find(
-        (delivery) =>
-          !delivery.rider_id &&
-          AVAILABLE_STATUSES.includes(delivery.status) &&
-          !declinedIds.has(delivery.id)
-      );
 
       setAvailableDelivery((previous) => {
         if (
@@ -407,7 +303,7 @@ export default function RiderApp() {
       console.error("Load delivery error:", error);
 
       if (showLoading) {
-        setMessage("Something went wrong while loading deliveries.");
+        setMessage(error.message || "Something went wrong while loading deliveries.");
         setLoading(false);
       }
     }
@@ -415,7 +311,7 @@ export default function RiderApp() {
 
   /*
    * =========================================
-   * INITIAL RIDER DATA + REALTIME
+   * INITIAL RIDER DATA + SERVER POLLING
    * =========================================
    */
 
@@ -431,7 +327,7 @@ export default function RiderApp() {
       if (cancelled) return;
 
       await Promise.all([
-        loadDelivery(true, riderId),
+        loadDeliveryRef.current?.(true, riderId),
         loadDeliveryHistory(riderId),
         loadTodayStats(riderId),
       ]);
@@ -439,69 +335,15 @@ export default function RiderApp() {
 
     void initializeRider();
 
-    const channel = supabase
-      .channel(`rider-delivery-updates-${riderId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "deliveries",
-        },
-        (payload) => {
-          const updatedDelivery = payload.new;
-
-          if (!updatedDelivery?.id) return;
-
-          if (
-            payload.eventType === "UPDATE" &&
-            updatedDelivery.status === "cancelled"
-          ) {
-            setActiveDelivery((previous) =>
-              previous?.id === updatedDelivery.id ? null : previous
-            );
-
-            setAvailableDelivery((previous) =>
-              previous?.id === updatedDelivery.id ? null : previous
-            );
-
-            setMessage("This delivery has been cancelled.");
-
-            void loadDelivery(false, riderId);
-            return;
-          }
-
-          /*
-           * Payment confirmation can happen without a status change.
-           * Check payment_status as well as status.
-           */
-          if (
-            payload.eventType === "UPDATE" &&
-            updatedDelivery.rider_id === riderId &&
-            updatedDelivery.status === "arrived_at_dropoff" &&
-            updatedDelivery.payment_status === "paid"
-          ) {
-            setActiveDelivery(updatedDelivery);
-
-            void finalizePaidDelivery(updatedDelivery, riderId);
-            return;
-          }
-
-          /*
-           * Refresh after other delivery changes.
-           */
-          void loadDelivery(false, riderId);
-        }
-      )
-      .subscribe((status) => {
-        if (status === "CHANNEL_ERROR") {
-          console.error("Rider delivery realtime channel error.");
-        }
-      });
+    const refreshTimer = window.setInterval(() => {
+      if (!cancelled) {
+        void loadDeliveryRef.current?.(false, riderId);
+      }
+    }, 10000);
 
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
+      window.clearInterval(refreshTimer);
     };
   }, [session]);
 
@@ -516,57 +358,21 @@ export default function RiderApp() {
       return;
     }
 
-    if (riderProfileRef.current?.approval_status !== "approved") {
-      setMessage(
-        "Your rider account must be approved before accepting deliveries."
-      );
-      return;
-    }
-
     try {
       setActionLoading(true);
       setMessage("");
 
-      const riderId = session.user.id;
-      const riderName = riderProfileRef.current?.full_name || RIDER.name;
+      const { delivery } = await riderApiRequest(
+        `/api/rider/deliveries/${encodeURIComponent(availableDelivery.id)}/accept`,
+        { method: "POST", body: "{}" }
+      );
 
-      const { data, error } = await supabase
-        .from("deliveries")
-        .update({
-          rider_id: riderId,
-          rider_name: riderName,
-          status: "accepted",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", availableDelivery.id)
-        .is("rider_id", null)
-        .in("status", AVAILABLE_STATUSES)
-        .select(
-          "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at"
-        )
-        .maybeSingle();
-
-      if (error) {
-        console.error("Accept delivery error:", error);
-        setMessage(error.message);
-        await loadDelivery(false, riderId);
-        return;
-      }
-
-      if (!data) {
-        setMessage(
-          "This delivery is no longer available or its payment status has changed. Refresh to see the latest requests."
-        );
-        await loadDelivery(false, riderId);
-        return;
-      }
-
-      setActiveDelivery(data);
+      setActiveDelivery(delivery);
       setAvailableDelivery(null);
       setMessage("Delivery accepted successfully.");
     } catch (error) {
       console.error("Accept delivery error:", error);
-      setMessage("Could not accept this delivery.");
+      setMessage(error.message || "Could not accept this delivery.");
     } finally {
       setActionLoading(false);
     }
@@ -581,8 +387,8 @@ export default function RiderApp() {
    * The backend must be the only trusted component that
    * sets payment_status = "paid" after verifying Paystack.
    *
-   * This function reads that verified database value,
-   * then attempts a conditional transition to delivered.
+   * The rider API provides the current delivery snapshot and checks the
+   * verified payment again before allowing the final transition.
    */
 
   async function finalizePaidDelivery(delivery, riderId) {
@@ -595,21 +401,7 @@ export default function RiderApp() {
     finalizingDeliveryRef.current.add(deliveryId);
 
     try {
-      const { data: latest, error: readError } = await supabase
-        .from("deliveries")
-        .select(
-          "id, rider_id, status, payment_status, delivery_fee, rider_earnings"
-        )
-        .eq("id", deliveryId)
-        .eq("rider_id", riderId)
-        .maybeSingle();
-
-      if (readError) throw readError;
-
-      if (!latest) {
-        await loadDelivery(false, riderId);
-        return;
-      }
+      const latest = delivery;
 
       /*
        * Payment must be confirmed by the backend.
@@ -634,35 +426,10 @@ export default function RiderApp() {
        */
       if (latest.status !== "arrived_at_dropoff") return;
 
-      /*
-       * Conditional update:
-       * - assigned to this rider
-       * - still at drop-off
-       * - payment is confirmed
-       *
-       * Supabase will calculate rider earnings securely.
-       */
-      const { data: completed, error: completeError } = await supabase
-        .from("deliveries")
-        .update({
-          status: "delivered",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", deliveryId)
-        .eq("rider_id", riderId)
-        .eq("status", "arrived_at_dropoff")
-        .eq("payment_status", "paid")
-        .select(
-          "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at"
-        )
-        .maybeSingle();
-
-      if (completeError) throw completeError;
-
-      if (!completed) {
-        await loadDelivery(false, riderId);
-        return;
-      }
+      const { delivery: completed } = await riderApiRequest(
+        `/api/rider/deliveries/${encodeURIComponent(deliveryId)}/status`,
+        { method: "POST", body: JSON.stringify({ status: "delivered" }) }
+      );
 
       setActiveDelivery(completed);
       setAvailableDelivery(null);
@@ -684,6 +451,9 @@ export default function RiderApp() {
       finalizingDeliveryRef.current.delete(deliveryId);
     }
   }
+
+  loadDeliveryRef.current = loadDelivery;
+  finalizePaidDeliveryRef.current = finalizePaidDelivery;
 
   /*
    * =========================================
@@ -711,62 +481,15 @@ export default function RiderApp() {
       setActionLoading(true);
       setMessage("");
 
-      const riderId = session.user.id;
+      const { delivery } = await riderApiRequest(
+        `/api/rider/deliveries/${encodeURIComponent(activeDelivery.id)}/status`,
+        { method: "POST", body: JSON.stringify({ status }) }
+      );
 
-      const updatePayload = {
-        status,
-        updated_at: new Date().toISOString(),
-      };
-
-      let updateQuery = supabase
-        .from("deliveries")
-        .update(updatePayload)
-        .eq("id", activeDelivery.id)
-        .eq("rider_id", riderId);
-
-      /*
-       * If a delivered transition is requested, require paid
-       * status in the database query as well.
-       */
-      if (status === "delivered") {
-        updateQuery = updateQuery
-          .eq("status", "arrived_at_dropoff")
-          .eq("payment_status", "paid");
-      }
-
-      const { data, error } = await updateQuery
-        .select(
-          "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at"
-        )
-        .maybeSingle();
-
-      if (error) {
-        console.error("Status update error:", error);
-        setMessage(error.message);
-        return;
-      }
-
-      if (!data) {
-        setMessage(
-          status === "delivered"
-            ? "Payment must be confirmed before completing this delivery."
-            : "The delivery status has changed. Refresh and try again."
-        );
-
-        await loadDelivery(false, riderId);
-        return;
-      }
-
-      setActiveDelivery(data);
-
-      /*
-       * Do not add earnings here for delivered transitions.
-       * Automatic payment completion is handled by
-       * finalizePaidDelivery(), which has a single guarded path.
-       */
+      setActiveDelivery(delivery);
     } catch (error) {
       console.error("Status update error:", error);
-      setMessage("Could not update delivery status.");
+      setMessage(error.message || "Could not update delivery status.");
     } finally {
       setActionLoading(false);
     }
@@ -781,29 +504,23 @@ export default function RiderApp() {
   async function updateOnlineStatus(nextStatus) {
     if (!supabase || !session?.user?.id) return;
 
-    if (nextStatus && riderProfileRef.current?.approval_status !== "approved") {
-      setIsOnline(false);
-      setMessage("Your rider account must be approved before going online.");
-      return;
-    }
-
     const previousStatus = isOnline;
-
     setIsOnline(nextStatus);
     setMessage("");
 
-    const { error } = await supabase
-      .from("rider_profiles")
-      .update({
-        is_online: nextStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", session.user.id);
-
-    if (error) {
+    try {
+      const result = await riderApiRequest("/api/rider/online-status", {
+        method: "POST",
+        body: JSON.stringify({ isOnline: nextStatus }),
+      });
+      setIsOnline(result.isOnline);
+      setRiderProfile((profile) =>
+        profile ? { ...profile, is_online: result.isOnline } : profile
+      );
+    } catch (error) {
       console.error("Could not update rider online status:", error);
       setIsOnline(previousStatus);
-      setMessage("Could not update your online status.");
+      setMessage(error.message || "Could not update your online status.");
     }
   }
 
@@ -939,17 +656,18 @@ export default function RiderApp() {
             <strong>
               {profileLoading
                 ? "Loading profile..."
-                : riderProfile?.full_name || RIDER.name}
+                : riderProfile?.full_name || "Complete your rider profile"}
             </strong>
 
             <small>
-              {riderProfile?.bike_model || RIDER.bike} •{" "}
-              {riderProfile?.plate_number || RIDER.plate}
+              {[riderProfile?.bike_model, riderProfile?.plate_number]
+                .filter(Boolean)
+                .join(" • ") || "Motorcycle details not added"}
             </small>
           </div>
 
           <div className="rider-rating">
-            ★ {riderProfile?.rating ?? RIDER.rating}
+            {riderProfile?.rating != null ? `★ ${riderProfile.rating}` : "Not rated yet"}
           </div>
         </section>
 
@@ -1039,13 +757,23 @@ export default function RiderApp() {
                   </strong>
                 </div>
 
-                <a
-                  href={`tel:${activeDelivery.recipient_phone || RIDER.phone}`}
-                  className="rider-call-button"
-                  aria-label="Call customer"
-                >
-                  <Phone size={18} />
-                </a>
+                {activeDelivery.recipient_phone ? (
+                  <a
+                    href={`tel:${activeDelivery.recipient_phone}`}
+                    className="rider-call-button"
+                    aria-label="Call recipient"
+                  >
+                    <Phone size={18} />
+                  </a>
+                ) : (
+                  <span
+                    className="rider-call-button"
+                    aria-label="Recipient phone number unavailable"
+                    title="Recipient phone number unavailable"
+                  >
+                    <Phone size={18} />
+                  </span>
+                )}
               </div>
             </section>
 
@@ -1453,27 +1181,17 @@ export default function RiderApp() {
                   setActionLoading(true);
 
                   try {
-                    const { error } = await supabase
-                      .from("rider_declined_deliveries")
-                      .upsert(
-                        {
-                          rider_id: riderId,
-                          delivery_id: declinedId,
-                        },
-                        {
-                          onConflict: "rider_id,delivery_id",
-                          ignoreDuplicates: true,
-                        }
-                      );
-
-                    if (error) throw error;
+                    await riderApiRequest(
+                      `/api/rider/deliveries/${encodeURIComponent(declinedId)}/decline`,
+                      { method: "POST", body: "{}" }
+                    );
 
                     setAvailableDelivery(null);
                     setMessage("Delivery request declined.");
                     await loadDelivery(false, riderId);
                   } catch (error) {
                     console.error("Could not decline delivery:", error);
-                    setMessage(`Could not decline request: ${error.message}`);
+                    setMessage(error.message || "Could not decline request.");
                   } finally {
                     setActionLoading(false);
                   }
@@ -1539,7 +1257,7 @@ export default function RiderApp() {
 
           <div>
             <span>Rating</span>
-            <strong>★ {riderProfile?.rating ?? RIDER.rating}</strong>
+            <strong>{riderProfile?.rating != null ? `★ ${riderProfile.rating}` : "Not rated yet"}</strong>
           </div>
         </section>
 

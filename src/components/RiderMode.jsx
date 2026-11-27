@@ -12,7 +12,8 @@ import RiderLocationBroadcaster from "./RiderLocationBroadcaster";
 
 export default function RiderMode({
   deliveryId,
-  riderName = "Chinedu Okafor",
+  riderId,
+  riderName = "HOKADA rider",
   onBack,
 }) {
   const [tracking, setTracking] = useState(false);
@@ -43,7 +44,7 @@ export default function RiderMode({
         <div>
           <span>Rider</span>
           <strong>{riderName}</strong>
-          <small>Honda Ace • KJA 482 XY</small>
+          <small>Motorcycle details unavailable</small>
         </div>
       </div>
 
@@ -99,7 +100,11 @@ export default function RiderMode({
           </div>
         </div>
 
-        <RiderLocationBroadcaster deliveryId={deliveryId} enabled={tracking} />
+        <RiderLocationBroadcaster
+          deliveryId={deliveryId}
+          riderId={riderId}
+          enabled={tracking}
+        />
 
         <button
           className={`gps-toggle-button ${tracking ? "tracking-active" : ""}`}

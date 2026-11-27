@@ -1,9 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { ArrowRight, Bike, Lock, Mail, Phone, User } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
+async function ensureCustomerProfile(user, fullName, phone) {
+  if (!supabase || !user?.id) return;
+
+  const { data: profile, error: readError } = await supabase
+    .from("customer_profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (readError) throw readError;
+  if (profile || !phone) return;
+
+  const { error: insertError } = await supabase
+    .from("customer_profiles")
+    .insert({
+      id: user.id,
+      full_name: fullName || user.user_metadata?.full_name || "",
+      phone,
+      updated_at: new Date().toISOString(),
+    });
+
+  if (insertError) throw insertError;
+}
+
 export default function CustomerAuth({ onAuthenticated }) {
   const [mode, setMode] = useState("login");
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const turnstileRef = useRef(null);
+  const [captchaToken, setCaptchaToken] = useState("");
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -42,6 +70,8 @@ export default function CustomerAuth({ onAuthenticated }) {
     setMode(nextMode);
     setErrorMessage("");
     setSuccessMessage("");
+    setCaptchaToken("");
+    turnstileRef.current?.reset();
   }
 
   async function handleSubmit(event) {
@@ -70,8 +100,29 @@ export default function CustomerAuth({ onAuthenticated }) {
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMessage("Password must be at least 6 characters.");
+    if (mode === "signup") {
+      const validPassword =
+        password.length >= 12 &&
+        /[a-z]/.test(password) &&
+        /[A-Z]/.test(password) &&
+        /[0-9]/.test(password) &&
+        /[^A-Za-z0-9]/.test(password);
+
+      if (!validPassword) {
+        setErrorMessage(
+          "Use at least 12 characters, including uppercase and lowercase letters, a number and a symbol."
+        );
+        return;
+      }
+    }
+
+    if (!turnstileSiteKey) {
+      setErrorMessage("Security verification is not configured. Please try again later.");
+      return;
+    }
+
+    if (!captchaToken) {
+      setErrorMessage("Please complete the security verification.");
       return;
     }
 
@@ -84,6 +135,8 @@ export default function CustomerAuth({ onAuthenticated }) {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+            data: { full_name: fullName.trim(), phone: phone.trim() },
+            captchaToken,
           },
         });
 
@@ -109,18 +162,7 @@ export default function CustomerAuth({ onAuthenticated }) {
           return;
         }
 
-        const { error: profileError } = await supabase
-          .from("customer_profiles")
-          .upsert({
-            id: data.user.id,
-            full_name: fullName.trim(),
-            phone: phone.trim(),
-            updated_at: new Date().toISOString(),
-          });
-
-        if (profileError) {
-          console.error("Could not create customer profile:", profileError);
-        }
+        await ensureCustomerProfile(data.user, fullName.trim(), phone.trim());
 
         onAuthenticated(data.user);
         return;
@@ -129,6 +171,7 @@ export default function CustomerAuth({ onAuthenticated }) {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
+        options: { captchaToken },
       });
 
       if (error) {
@@ -137,6 +180,16 @@ export default function CustomerAuth({ onAuthenticated }) {
 
       if (!data.user) {
         throw new Error("Login failed.");
+      }
+
+      try {
+        await ensureCustomerProfile(
+          data.user,
+          data.user.user_metadata?.full_name || "",
+          data.user.user_metadata?.phone || ""
+        );
+      } catch (profileError) {
+        console.error("Could not create customer profile:", profileError);
       }
 
       onAuthenticated(data.user);
@@ -148,6 +201,8 @@ export default function CustomerAuth({ onAuthenticated }) {
       );
     } finally {
       setLoading(false);
+      setCaptchaToken("");
+      turnstileRef.current?.reset();
     }
   }
 
@@ -253,7 +308,8 @@ export default function CustomerAuth({ onAuthenticated }) {
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  placeholder="At least 6 characters"
+                  placeholder={mode === "signup" ? "At least 12 characters" : "Enter your password"}
+                  minLength={mode === "signup" ? 12 : undefined}
                   autoComplete={
                     mode === "login" ? "current-password" : "new-password"
                   }
@@ -261,10 +317,26 @@ export default function CustomerAuth({ onAuthenticated }) {
               </div>
             </div>
 
+            {turnstileSiteKey ? (
+<Turnstile
+              ref={turnstileRef}
+              siteKey={turnstileSiteKey}
+              onSuccess={setCaptchaToken}
+              onExpire={() => setCaptchaToken("")}
+              onError={(errorCode) => {
+                setCaptchaToken("");
+                console.error("Turnstile widget failed:", errorCode);
+                setErrorMessage(
+                  `Security verification failed${errorCode ? ` (${errorCode})` : ""}. Please try again.`
+                );
+              }}
+            />
+) : null}
+
             <button
               type="submit"
               className="primary-button full-width auth-submit"
-              disabled={loading}
+              disabled={loading || !turnstileSiteKey || !captchaToken}
             >
               {loading
                 ? "Please wait..."

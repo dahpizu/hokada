@@ -208,22 +208,6 @@ export default function AddressLocationSection({
     });
   }
 
-  function handleAreaChange(nextArea) {
-    setAreaChoice(nextArea);
-    setAreaConfirmed(false);
-    setCustomArea("");
-    setHouseStreet("");
-    setLandmark("");
-    clearLocation();
-
-    publishAddress({
-      areaChoice: nextArea,
-      customArea: "",
-      houseStreet: "",
-      landmark: ""
-    });
-  }
-
   function handleConfirmArea() {
     if (!state || !area.trim()) return;
     setAreaConfirmed(true);
@@ -244,20 +228,6 @@ export default function AddressLocationSection({
   function handleLandmarkChange(nextValue) {
     setLandmark(nextValue);
     publishAddress({ landmark: nextValue });
-  }
-
-  function handleCustomAreaChange(nextValue) {
-    setCustomArea(nextValue);
-    setAreaConfirmed(false);
-    setHouseStreet("");
-    setLandmark("");
-    clearLocation();
-
-    publishAddress({
-      customArea: nextValue,
-      houseStreet: "",
-      landmark: ""
-    });
   }
 
   useEffect(() => {

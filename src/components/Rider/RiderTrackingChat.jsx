@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
-import { supabase } from "../../lib/supabase";
+import { riderApiRequest } from "../../lib/riderApi";
 
 const CHAT_ENABLED_STATUSES = ["arrived", "collected", "arrived_at_dropoff"];
 
@@ -13,76 +13,31 @@ export default function RiderTrackingChat({ deliveryId, status }) {
   const chatEnabled = CHAT_ENABLED_STATUSES.includes(status);
 
   useEffect(() => {
-    if (!supabase || !deliveryId) {
+    if (!deliveryId || !chatEnabled || !isOpen) {
       return;
     }
 
     let mounted = true;
 
     async function loadMessages() {
-      const { data, error } = await supabase
-        .from("delivery_messages")
-        .select("id, delivery_id, sender_id, sender_type, message, created_at")
-        .eq("delivery_id", deliveryId)
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        console.error("Could not load rider chat messages:", error);
-        return;
-      }
-
-      if (mounted) {
-        setMessages(data || []);
+      try {
+        const { messages: data } = await riderApiRequest(
+          `/api/rider/deliveries/${encodeURIComponent(deliveryId)}/messages`
+        );
+        if (mounted) setMessages(data || []);
+      } catch (error) {
+        if (mounted) console.error("Could not load rider chat messages:", error);
       }
     }
 
-    // Load messages immediately
-    loadMessages();
-
-    // Keep checking for new messages
-    const pollingInterval = setInterval(() => {
-      loadMessages();
-    }, 2000);
-
-    // Also listen for realtime messages
-    const channel = supabase
-      .channel(`rider-chat:${deliveryId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "delivery_messages",
-          filter: `delivery_id=eq.${deliveryId}`,
-        },
-        (payload) => {
-          if (!mounted) {
-            return;
-          }
-
-          setMessages((previous) => {
-            const exists = previous.some(
-              (message) => message.id === payload.new.id
-            );
-
-            if (exists) {
-              return previous;
-            }
-
-            return [...previous, payload.new];
-          });
-        }
-      )
-      .subscribe((subscriptionStatus) => {
-        console.log("HOKADA rider chat realtime:", subscriptionStatus);
-      });
+    void loadMessages();
+    const pollingInterval = window.setInterval(() => void loadMessages(), 5000);
 
     return () => {
       mounted = false;
-      clearInterval(pollingInterval);
-      supabase.removeChannel(channel);
+      window.clearInterval(pollingInterval);
     };
-  }, [deliveryId]);
+  }, [deliveryId, chatEnabled, isOpen]);
 
   useEffect(() => {
     if (!chatEnabled) {
@@ -95,59 +50,25 @@ export default function RiderTrackingChat({ deliveryId, status }) {
 
     const message = messageText.trim();
 
-    if (!message || !chatEnabled || !supabase || !deliveryId || loading) {
+    if (!message || !chatEnabled || !deliveryId || loading) {
       return;
     }
 
     try {
       setLoading(true);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      const { error } = await supabase.from("delivery_messages").insert({
-        delivery_id: deliveryId,
-        sender_id: user?.id || null,
-        sender_type: "rider",
-        message,
-      });
-
-      if (error) {
-        console.error("Could not send rider message:", error);
-        alert("Could not send your message.");
-        return;
-      }
-
+      const { message: savedMessage } = await riderApiRequest(
+        `/api/rider/deliveries/${encodeURIComponent(deliveryId)}/messages`,
+        { method: "POST", body: JSON.stringify({ message }) }
+      );
+      setMessages((previous) => [...previous, savedMessage]);
       setMessageText("");
-
-      // Immediately reload after sending
-      await loadMessagesAfterSend();
     } catch (error) {
       console.error("Rider chat error:", error);
-      alert("Could not send your message.");
+      alert(error.message || "Could not send your message.");
     } finally {
       setLoading(false);
     }
-  }
-
-  async function loadMessagesAfterSend() {
-    if (!supabase || !deliveryId) {
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("delivery_messages")
-      .select("id, delivery_id, sender_id, sender_type, message, created_at")
-      .eq("delivery_id", deliveryId)
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      console.error("Could not refresh rider chat messages:", error);
-      return;
-    }
-
-    setMessages(data || []);
   }
 
   if (!deliveryId) {

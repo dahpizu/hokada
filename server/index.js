@@ -4,26 +4,14 @@ import dotenv from "dotenv";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import WebSocket from "ws";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4242;
 const PAYSTACK_SECRET_KEY = (process.env.PAYSTACK_SECRET_KEY || "").trim();
-console.log(
-  "Paystack key diagnostic:",
-  JSON.stringify({
-    configured: Boolean(PAYSTACK_SECRET_KEY),
-    length: PAYSTACK_SECRET_KEY?.length ?? 0,
-    fingerprint: PAYSTACK_SECRET_KEY
-      ? crypto
-          .createHash("sha256")
-          .update(PAYSTACK_SECRET_KEY)
-          .digest("hex")
-          .slice(0, 12)
-      : "missing",
-  })
-);
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_PUBLISHABLE_KEY =
@@ -57,7 +45,76 @@ const authClient =
       })
     : null;
 
+app.use(helmet());
 app.use(cors({ origin: allowedOrigins }));
+app.use("/api", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 900,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again later." },
+});
+
+const quoteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many quote requests. Please try again later." },
+});
+
+const deliveryLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many delivery requests. Please try again later." },
+});
+
+const paymentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many payment requests. Please try again later." },
+});
+
+const verificationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many verification requests. Please try again later." },
+});
+
+const riderLocationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Location updates are arriving too quickly. Try again shortly." },
+});
+
+const chatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 600,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Chat is receiving requests too quickly." },
+});
+
+const webhookLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many webhook requests." },
+});
 
 async function requireCustomer(req, res, next) {
   const authorization = req.headers.authorization || "";
@@ -86,6 +143,41 @@ async function requireCustomer(req, res, next) {
   }
 }
 
+async function requireRider(req, res, next) {
+  const authorization = req.headers.authorization || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+
+  if (!supabase || !authClient || !match) {
+    return res.status(401).json({ error: "Please sign in with a rider account." });
+  }
+
+  try {
+    const { data, error } = await authClient.auth.getUser(match[1]);
+
+    if (error || !data?.user) {
+      return res.status(401).json({ error: "Your session is invalid or expired." });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("rider_profiles")
+      .select("id, full_name, approval_status, is_online, rating")
+      .eq("id", data.user.id)
+      .maybeSingle();
+
+    if (profileError) throw profileError;
+    if (!profile) {
+      return res.status(403).json({ error: "No rider profile exists for this account." });
+    }
+
+    req.rider = data.user;
+    req.riderProfile = profile;
+    return next();
+  } catch (error) {
+    console.error("Rider authentication failed:", error.message);
+    return res.status(401).json({ error: "Could not verify this rider account." });
+  }
+}
+
 function requireConfiguration(_req, res, next) {
   if (!supabase || !PAYSTACK_SECRET_KEY) {
     return res.status(500).json({
@@ -99,12 +191,7 @@ function requireConfiguration(_req, res, next) {
 app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
-    service: "HOKADA payments",
-    supabaseUrlConfigured: Boolean(SUPABASE_URL),
-    serviceRoleKeyConfigured: Boolean(SUPABASE_SERVICE_ROLE_KEY),
-    publishableKeyConfigured: Boolean(SUPABASE_PUBLISHABLE_KEY),
-    supabaseConfigured: Boolean(supabase && authClient),
-    paystackConfigured: Boolean(PAYSTACK_SECRET_KEY),
+    service: "HOKADA API",
   });
 });
 
@@ -116,6 +203,7 @@ async function paystackRequest(path, body) {
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
+    signal: AbortSignal.timeout(20000),
   });
 
   const result = await response.json();
@@ -137,6 +225,7 @@ async function inspectPaystackReference(reference) {
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
       },
+      signal: AbortSignal.timeout(20000),
     }
   );
 
@@ -185,7 +274,7 @@ async function getDelivery(deliveryId) {
   const { data, error } = await supabase
     .from("deliveries")
     .select(
-      "id, customer_id, delivery_fee, payment_status, payment_provider, payment_reference, payment_amount_kobo, paid_at"
+      "id, customer_id, status, delivery_fee, payment_status, payment_provider, payment_reference, payment_amount_kobo, paid_at"
     )
     .eq("id", deliveryId)
     .maybeSingle();
@@ -317,6 +406,7 @@ async function verifyAndRecordPayment(reference) {
 // Register the raw-body webhook before express.json().
 app.post(
   "/api/payments/webhook",
+  webhookLimiter,
   express.raw({ type: "application/json" }),
   requireConfiguration,
   async (req, res) => {
@@ -361,7 +451,51 @@ app.post(
   }
 );
 
+app.use("/api", apiLimiter);
+
 app.use(express.json({ limit: "32kb" }));
+
+app.post("/api/rider/profile", requireCustomer, async (req, res) => {
+  if (!supabase) {
+    return res.status(500).json({ error: "Rider service configuration is incomplete." });
+  }
+
+  const requestedName = req.body?.fullName;
+  const fullName = String(
+    requestedName || req.customer.user_metadata?.full_name || "HOKADA Rider"
+  ).trim().slice(0, 150);
+
+  try {
+    const { data: existing, error: readError } = await supabase
+      .from("rider_profiles")
+      .select("id, full_name, approval_status, is_online, rating")
+      .eq("id", req.customer.id)
+      .maybeSingle();
+
+    if (readError) throw readError;
+    if (existing) return res.json({ profile: existing });
+
+    const { data: profile, error: insertError } = await supabase
+      .from("rider_profiles")
+      .insert({
+        id: req.customer.id,
+        full_name: fullName || "HOKADA Rider",
+        approval_status: "pending",
+        rating: 5,
+        total_deliveries: 0,
+        total_earnings: 0,
+        is_online: false,
+      })
+      .select("id, full_name, approval_status, is_online, rating")
+      .single();
+
+    if (insertError) throw insertError;
+    return res.status(201).json({ profile });
+  } catch (error) {
+    console.error("Could not ensure rider profile:", error.message);
+    return res.status(500).json({ error: "Could not prepare the rider profile." });
+  }
+});
 
 
 // Server-owned delivery pricing. Keep these estimates aligned with the
@@ -423,8 +557,434 @@ async function calculateServerDeliveryFee(
   };
 }
 
+const RIDER_ACTIVE_STATUSES = [
+  "accepted",
+  "in_transit",
+  "arrived",
+  "collected",
+  "going_to_dropoff",
+  "arrived_at_dropoff",
+];
+const RIDER_AVAILABLE_STATUSES = ["searching", "pending"];
+const CHAT_ENABLED_STATUSES = ["arrived", "collected", "arrived_at_dropoff"];
+const DELIVERY_SELECT =
+  "id, customer_id, customer_name, rider_id, rider_name, pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, delivery_type, notes, status, payment_status, delivery_fee, rider_earnings, created_at, updated_at";
+
+function isUuid(value) {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function normalizeChatMessage(value) {
+  if (typeof value !== "string") return null;
+  const message = value.trim();
+  return message.length > 0 && message.length <= 1000 ? message : null;
+}
+
+app.get("/api/rider/deliveries", requireRider, async (req, res) => {
+  try {
+    if (req.riderProfile.approval_status !== "approved") {
+      return res.status(403).json({ error: "Your rider account is awaiting approval." });
+    }
+
+    const { data: assignedRows, error: assignedError } = await supabase
+      .from("deliveries")
+      .select(DELIVERY_SELECT)
+      .eq("rider_id", req.rider.id)
+      .in("status", RIDER_ACTIVE_STATUSES)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+
+    if (assignedError) throw assignedError;
+    const activeDelivery = assignedRows?.[0] || null;
+
+    if (activeDelivery || !req.riderProfile.is_online) {
+      return res.json({ activeDelivery, availableDelivery: null });
+    }
+
+    const { data: declinedRows, error: declinedError } = await supabase
+      .from("rider_declined_deliveries")
+      .select("delivery_id")
+      .eq("rider_id", req.rider.id);
+
+    if (declinedError) throw declinedError;
+
+    const declinedIds = new Set((declinedRows || []).map((row) => row.delivery_id));
+    const { data: availableRows, error: availableError } = await supabase
+      .from("deliveries")
+      .select(DELIVERY_SELECT)
+      .is("rider_id", null)
+      .in("status", RIDER_AVAILABLE_STATUSES)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (availableError) throw availableError;
+    const availableDelivery = (availableRows || []).find(
+      (delivery) => !declinedIds.has(delivery.id)
+    ) || null;
+
+    return res.json({
+      activeDelivery: null,
+      availableDelivery,
+    });
+  } catch (error) {
+    console.error("Could not load rider deliveries:", error.message);
+    return res.status(500).json({ error: "Could not load rider deliveries." });
+  }
+});
+
+app.get("/api/rider/profile", requireRider, (req, res) => {
+  res.json({ profile: req.riderProfile });
+});
+
+app.get("/api/rider/history", requireRider, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("deliveries")
+      .select("id, pickup_address, dropoff_address, rider_earnings, updated_at, status")
+      .eq("rider_id", req.rider.id)
+      .eq("status", "delivered")
+      .order("updated_at", { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    return res.json({ deliveries: data || [] });
+  } catch (error) {
+    console.error("Could not load rider history:", error.message);
+    return res.status(500).json({ error: "Could not load delivery history." });
+  }
+});
+
+app.get("/api/rider/today-stats", requireRider, async (req, res) => {
+  const start = req.query.start;
+  const startDate = typeof start === "string" ? new Date(start) : null;
+  if (!startDate || !Number.isFinite(startDate.getTime())) {
+    return res.status(400).json({ error: "A valid start of day is required." });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("deliveries")
+      .select("rider_earnings")
+      .eq("rider_id", req.rider.id)
+      .eq("status", "delivered")
+      .gte("updated_at", startDate.toISOString());
+
+    if (error) throw error;
+    const deliveries = data || [];
+    const earnings = deliveries.reduce(
+      (total, delivery) => total + Number(delivery.rider_earnings || 0),
+      0
+    );
+
+    return res.json({ deliveries: deliveries.length, earnings });
+  } catch (error) {
+    console.error("Could not load rider stats:", error.message);
+    return res.status(500).json({ error: "Could not load today's rider stats." });
+  }
+});
+
+app.get("/api/rider/deliveries/:deliveryId/messages", chatLimiter, requireRider, async (req, res) => {
+  if (!isUuid(req.params.deliveryId)) {
+    return res.status(400).json({ error: "Invalid delivery ID." });
+  }
+
+  try {
+    const { data: delivery, error: deliveryError } = await supabase
+      .from("deliveries")
+      .select("id, status")
+      .eq("id", req.params.deliveryId)
+      .eq("rider_id", req.rider.id)
+      .maybeSingle();
+
+    if (deliveryError) throw deliveryError;
+    if (!delivery || !CHAT_ENABLED_STATUSES.includes(delivery.status)) {
+      return res.status(403).json({ error: "Chat is unavailable for this delivery." });
+    }
+
+    const { data: messages, error } = await supabase
+      .from("delivery_messages")
+      .select("id, delivery_id, sender_id, sender_type, message, created_at")
+      .eq("delivery_id", delivery.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+    return res.json({ messages: (messages || []).reverse() });
+  } catch (error) {
+    console.error("Could not load rider chat:", error.message);
+    return res.status(500).json({ error: "Could not load chat messages." });
+  }
+});
+
+app.post("/api/rider/deliveries/:deliveryId/messages", chatLimiter, requireRider, async (req, res) => {
+  const message = normalizeChatMessage(req.body?.message);
+  if (!message) {
+    return res.status(400).json({ error: "Messages must be between 1 and 1,000 characters." });
+  }
+  if (!isUuid(req.params.deliveryId)) {
+    return res.status(400).json({ error: "Invalid delivery ID." });
+  }
+
+  try {
+    const { data: delivery, error: deliveryError } = await supabase
+      .from("deliveries")
+      .select("id, status")
+      .eq("id", req.params.deliveryId)
+      .eq("rider_id", req.rider.id)
+      .maybeSingle();
+
+    if (deliveryError) throw deliveryError;
+    if (!delivery || !CHAT_ENABLED_STATUSES.includes(delivery.status)) {
+      return res.status(403).json({ error: "Chat is unavailable for this delivery." });
+    }
+
+    const { data, error } = await supabase
+      .from("delivery_messages")
+      .insert({
+        delivery_id: delivery.id,
+        sender_id: req.rider.id,
+        sender_type: "rider",
+        message,
+      })
+      .select("id, delivery_id, sender_id, sender_type, message, created_at")
+      .single();
+
+    if (error) throw error;
+    return res.status(201).json({ message: data });
+  } catch (error) {
+    console.error("Could not send rider chat message:", error.message);
+    return res.status(500).json({ error: "Could not send your message." });
+  }
+});
+
+app.post("/api/rider/online-status", requireRider, async (req, res) => {
+  const { isOnline } = req.body ?? {};
+  if (typeof isOnline !== "boolean") {
+    return res.status(400).json({ error: "Online status must be true or false." });
+  }
+
+  if (isOnline && req.riderProfile.approval_status !== "approved") {
+    return res.status(403).json({ error: "Your rider account must be approved before going online." });
+  }
+
+  try {
+    let update = supabase
+      .from("rider_profiles")
+      .update({ is_online: isOnline, updated_at: new Date().toISOString() })
+      .eq("id", req.rider.id);
+
+    if (isOnline) update = update.eq("approval_status", "approved");
+
+    const { data, error } = await update
+      .select("id, is_online, approval_status")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(409).json({ error: "Rider approval changed. Refresh and try again." });
+    }
+
+    return res.json({ isOnline: data.is_online });
+  } catch (error) {
+    console.error("Could not update rider online status:", error.message);
+    return res.status(500).json({ error: "Could not update your online status." });
+  }
+});
+
+app.post("/api/rider/deliveries/:deliveryId/accept", requireRider, async (req, res) => {
+  if (req.riderProfile.approval_status !== "approved") {
+    return res.status(403).json({ error: "Your rider account must be approved before accepting deliveries." });
+  }
+  if (!req.riderProfile.is_online) {
+    return res.status(409).json({ error: "Go online before accepting a delivery." });
+  }
+  if (!isUuid(req.params.deliveryId)) {
+    return res.status(400).json({ error: "Invalid delivery ID." });
+  }
+
+  try {
+    const riderName = String(
+      req.riderProfile.full_name || req.rider.user_metadata?.full_name || "HOKADA Rider"
+    ).trim().slice(0, 150);
+    const { data, error } = await supabase
+      .from("deliveries")
+      .update({
+        rider_id: req.rider.id,
+        rider_name: riderName,
+        status: "accepted",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", req.params.deliveryId)
+      .is("rider_id", null)
+      .in("status", RIDER_AVAILABLE_STATUSES)
+      .select(DELIVERY_SELECT)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(409).json({ error: "This delivery is no longer available." });
+    }
+
+    return res.json({ delivery: data });
+  } catch (error) {
+    console.error("Could not accept delivery:", error.message);
+    return res.status(500).json({ error: "Could not accept this delivery." });
+  }
+});
+
+app.post("/api/rider/deliveries/:deliveryId/status", requireRider, async (req, res) => {
+  if (req.riderProfile.approval_status !== "approved") {
+    return res.status(403).json({ error: "Your rider account is not approved." });
+  }
+  if (!isUuid(req.params.deliveryId)) {
+    return res.status(400).json({ error: "Invalid delivery ID." });
+  }
+
+  const nextStatus = req.body?.status;
+  const previousStatusByNext = {
+    in_transit: "accepted",
+    arrived: "in_transit",
+    collected: "arrived",
+    going_to_dropoff: "collected",
+    arrived_at_dropoff: "going_to_dropoff",
+    delivered: "arrived_at_dropoff",
+  };
+  const expectedStatus = previousStatusByNext[nextStatus];
+  if (!expectedStatus) {
+    return res.status(400).json({ error: "Invalid delivery status transition." });
+  }
+
+  try {
+    const { data: current, error: readError } = await supabase
+      .from("deliveries")
+      .select("id, rider_id, status, payment_status")
+      .eq("id", req.params.deliveryId)
+      .eq("rider_id", req.rider.id)
+      .maybeSingle();
+
+    if (readError) throw readError;
+    if (!current) return res.status(404).json({ error: "Assigned delivery not found." });
+    if (current.status !== expectedStatus) {
+      return res.status(409).json({ error: "The delivery has changed. Refresh and try again." });
+    }
+    if (nextStatus === "delivered" && current.payment_status !== "paid") {
+      return res.status(409).json({ error: "Payment must be confirmed before completing this delivery." });
+    }
+
+    let update = supabase
+      .from("deliveries")
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq("id", current.id)
+      .eq("rider_id", req.rider.id)
+      .eq("status", expectedStatus);
+
+    if (nextStatus === "delivered") update = update.eq("payment_status", "paid");
+
+    const { data, error } = await update
+      .select(DELIVERY_SELECT)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return res.status(409).json({ error: "The delivery changed while updating. Refresh and try again." });
+
+    return res.json({ delivery: data });
+  } catch (error) {
+    console.error("Could not update delivery status:", error.message);
+    return res.status(500).json({ error: "Could not update delivery status." });
+  }
+});
+
+app.post("/api/rider/deliveries/:deliveryId/decline", requireRider, async (req, res) => {
+  if (req.riderProfile.approval_status !== "approved") {
+    return res.status(403).json({ error: "Your rider account is not approved." });
+  }
+  if (!isUuid(req.params.deliveryId)) {
+    return res.status(400).json({ error: "Invalid delivery ID." });
+  }
+
+  try {
+    const { data: delivery, error: readError } = await supabase
+      .from("deliveries")
+      .select("id, rider_id, status")
+      .eq("id", req.params.deliveryId)
+      .maybeSingle();
+
+    if (readError) throw readError;
+    if (!delivery || delivery.rider_id || !RIDER_AVAILABLE_STATUSES.includes(delivery.status)) {
+      return res.status(409).json({ error: "This delivery is no longer available." });
+    }
+
+    const { error } = await supabase
+      .from("rider_declined_deliveries")
+      .upsert(
+        { rider_id: req.rider.id, delivery_id: delivery.id },
+        { onConflict: "rider_id,delivery_id", ignoreDuplicates: true }
+      );
+
+    if (error) throw error;
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Could not decline delivery:", error.message);
+    return res.status(500).json({ error: "Could not decline this delivery." });
+  }
+});
+
+app.post("/api/rider/deliveries/:deliveryId/location", riderLocationLimiter, requireRider, async (req, res) => {
+  if (req.riderProfile.approval_status !== "approved") {
+    return res.status(403).json({ error: "Your rider account is not approved." });
+  }
+  if (!isUuid(req.params.deliveryId)) {
+    return res.status(400).json({ error: "Invalid delivery ID." });
+  }
+
+  const { latitude, longitude, heading, speed, accuracy } = req.body ?? {};
+  if (
+    !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+    !Number.isFinite(longitude) || longitude < -180 || longitude > 180 ||
+    (heading !== null && heading !== undefined && !Number.isFinite(heading)) ||
+    (speed !== null && speed !== undefined && !Number.isFinite(speed)) ||
+    (accuracy !== null && accuracy !== undefined && !Number.isFinite(accuracy))
+  ) {
+    return res.status(400).json({ error: "Invalid rider location." });
+  }
+
+  try {
+    const { data: delivery, error: readError } = await supabase
+      .from("deliveries")
+      .select("id, rider_id, status")
+      .eq("id", req.params.deliveryId)
+      .eq("rider_id", req.rider.id)
+      .in("status", RIDER_ACTIVE_STATUSES)
+      .maybeSingle();
+
+    if (readError) throw readError;
+    if (!delivery) return res.status(403).json({ error: "This rider is not assigned to an active delivery." });
+
+    const { error } = await supabase.from("delivery_live_locations").upsert(
+      {
+        delivery_id: delivery.id,
+        rider_id: req.rider.id,
+        latitude,
+        longitude,
+        heading: heading ?? null,
+        speed: speed ?? null,
+        accuracy: accuracy ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "delivery_id" }
+    );
+
+    if (error) throw error;
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("Could not save rider location:", error.message);
+    return res.status(500).json({ error: "Could not save rider location." });
+  }
+});
+
 // Calculate a customer-facing quote without creating a delivery.
-app.post("/api/delivery-quote", requireCustomer, async (req, res) => {
+app.post("/api/delivery-quote", quoteLimiter, requireCustomer, async (req, res) => {
   try {
     const body = req.body ?? {};
     const {
@@ -483,7 +1043,7 @@ app.post("/api/delivery-quote", requireCustomer, async (req, res) => {
 
 // Create deliveries through the authenticated backend instead of allowing
 // the browser to choose the saved price, payment state, rider, or earnings.
-app.post("/api/deliveries", requireCustomer, async (req, res) => {
+app.post("/api/deliveries", deliveryLimiter, requireCustomer, async (req, res) => {
   try {
     if (!supabase) {
       return res.status(500).json({
@@ -649,9 +1209,125 @@ app.post("/api/deliveries", requireCustomer, async (req, res) => {
   }
 });
 
+app.post("/api/deliveries/:deliveryId/cancel", requireCustomer, async (req, res) => {
+  if (!supabase) {
+    return res.status(500).json({ error: "Delivery service configuration is incomplete." });
+  }
+  if (!isUuid(req.params.deliveryId)) {
+    return res.status(400).json({ error: "Invalid delivery ID." });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("deliveries")
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("id", req.params.deliveryId)
+      .eq("customer_id", req.customer.id)
+      .eq("payment_status", "unpaid")
+      .in("status", [
+        "searching",
+        "pending",
+        "accepted",
+        "in_transit",
+        "arrived",
+        "collected",
+        "going_to_dropoff",
+        "arrived_at_dropoff",
+      ])
+      .select("id, status")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(409).json({
+        error: "Cancellation is unavailable because payment or delivery status has changed.",
+      });
+    }
+    return res.json({ delivery: data });
+  } catch (error) {
+    console.error("Could not cancel delivery:", error.message);
+    return res.status(500).json({ error: "Could not cancel this delivery." });
+  }
+});
+
+app.get("/api/deliveries/:deliveryId/messages", chatLimiter, requireCustomer, async (req, res) => {
+  if (!isUuid(req.params.deliveryId)) {
+    return res.status(400).json({ error: "Invalid delivery ID." });
+  }
+
+  try {
+    const { data: delivery, error: deliveryError } = await supabase
+      .from("deliveries")
+      .select("id, status")
+      .eq("id", req.params.deliveryId)
+      .eq("customer_id", req.customer.id)
+      .maybeSingle();
+
+    if (deliveryError) throw deliveryError;
+    if (!delivery || !CHAT_ENABLED_STATUSES.includes(delivery.status)) {
+      return res.status(403).json({ error: "Chat is unavailable for this delivery." });
+    }
+
+    const { data: messages, error } = await supabase
+      .from("delivery_messages")
+      .select("id, delivery_id, sender_id, sender_type, message, created_at")
+      .eq("delivery_id", delivery.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+    return res.json({ messages: (messages || []).reverse() });
+  } catch (error) {
+    console.error("Could not load customer chat:", error.message);
+    return res.status(500).json({ error: "Could not load chat messages." });
+  }
+});
+
+app.post("/api/deliveries/:deliveryId/messages", chatLimiter, requireCustomer, async (req, res) => {
+  const message = normalizeChatMessage(req.body?.message);
+  if (!message) {
+    return res.status(400).json({ error: "Messages must be between 1 and 1,000 characters." });
+  }
+  if (!isUuid(req.params.deliveryId)) {
+    return res.status(400).json({ error: "Invalid delivery ID." });
+  }
+
+  try {
+    const { data: delivery, error: deliveryError } = await supabase
+      .from("deliveries")
+      .select("id, status")
+      .eq("id", req.params.deliveryId)
+      .eq("customer_id", req.customer.id)
+      .maybeSingle();
+
+    if (deliveryError) throw deliveryError;
+    if (!delivery || !CHAT_ENABLED_STATUSES.includes(delivery.status)) {
+      return res.status(403).json({ error: "Chat is unavailable for this delivery." });
+    }
+
+    const { data, error } = await supabase
+      .from("delivery_messages")
+      .insert({
+        delivery_id: delivery.id,
+        sender_id: req.customer.id,
+        sender_type: "customer",
+        message,
+      })
+      .select("id, delivery_id, sender_id, sender_type, message, created_at")
+      .single();
+
+    if (error) throw error;
+    return res.status(201).json({ message: data });
+  } catch (error) {
+    console.error("Could not send customer chat message:", error.message);
+    return res.status(500).json({ error: "Could not send your message." });
+  }
+});
+
 // Initialize payment for the authenticated owner of the delivery.
 app.post(
   "/api/payments/initialize",
+  paymentLimiter,
   requireConfiguration,
   requireCustomer,
   async (req, res) => {
@@ -682,6 +1358,13 @@ app.post(
       if (delivery.customer_id !== req.customer.id) {
         return res.status(403).json({
           error: "You are not authorized to pay for this delivery.",
+        });
+      }
+
+      if (!["arrived_at_dropoff", "delivered"].includes(delivery.status)) {
+        return res.status(409).json({
+          error:
+            "Payment becomes available when your rider reaches the drop-off location.",
         });
       }
 
@@ -799,6 +1482,7 @@ app.post(
         .eq("id", delivery.id)
         .eq("customer_id", req.customer.id)
         .eq("payment_status", "unpaid")
+        .in("status", ["arrived_at_dropoff", "delivered"])
         .select("id")
         .maybeSingle();
 
@@ -807,7 +1491,7 @@ app.post(
       if (!saved) {
         return res.status(409).json({
           error:
-            "Could not reserve payment for this delivery. Refresh and try again.",
+            "Payment or delivery status changed. Refresh and try again.",
         });
       }
 
@@ -845,6 +1529,7 @@ app.post(
 // Verify only references belonging to the authenticated customer.
 app.get(
   "/api/payments/verify/:reference",
+  verificationLimiter,
   requireConfiguration,
   requireCustomer,
   async (req, res) => {

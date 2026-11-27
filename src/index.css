@@ -8,6 +8,15 @@ body,
   padding: 0;
 }
 
+.app-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #454b45;
+  font: 600 15px/1.5 system-ui, sans-serif;
+}
+
 html {
   overflow-x: hidden;
 }

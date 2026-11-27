@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import { customerApiRequest } from "../lib/customerApi";
 
 const CHAT_ENABLED_STATUSES = ["arrived", "collected", "arrived_at_dropoff"];
 
@@ -13,68 +13,32 @@ export default function TrackingChat({ deliveryId, status }) {
   const chatEnabled = CHAT_ENABLED_STATUSES.includes(status);
 
   useEffect(() => {
-    if (!supabase || !deliveryId) {
+    if (!deliveryId || !chatEnabled || !isOpen) {
       return;
     }
 
     let mounted = true;
 
     async function loadMessages() {
-      const { data, error } = await supabase
-        .from("delivery_messages")
-        .select("id, delivery_id, sender_id, sender_type, message, created_at")
-        .eq("delivery_id", deliveryId)
-        .order("created_at", { ascending: true });
+      try {
+        const { messages: data } = await customerApiRequest(
+          `/api/deliveries/${encodeURIComponent(deliveryId)}/messages`
+        );
 
-      if (error) {
-        console.error("Could not load chat messages:", error);
-        return;
-      }
-
-      if (mounted) {
-        setMessages(data || []);
+        if (mounted) setMessages(data || []);
+      } catch (error) {
+        if (mounted) console.error("Could not load chat messages:", error);
       }
     }
 
-    loadMessages();
-
-    const channel = supabase
-      .channel(`delivery-chat:${deliveryId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "delivery_messages",
-          filter: `delivery_id=eq.${deliveryId}`,
-        },
-        (payload) => {
-          if (!mounted) {
-            return;
-          }
-
-          setMessages((previous) => {
-            const exists = previous.some(
-              (message) => message.id === payload.new.id
-            );
-
-            if (exists) {
-              return previous;
-            }
-
-            return [...previous, payload.new];
-          });
-        }
-      )
-      .subscribe((subscriptionStatus) => {
-        console.log("HOKADA customer chat realtime:", subscriptionStatus);
-      });
+    void loadMessages();
+    const refreshTimer = window.setInterval(() => void loadMessages(), 5000);
 
     return () => {
       mounted = false;
-      supabase.removeChannel(channel);
+      window.clearInterval(refreshTimer);
     };
-  }, [deliveryId]);
+  }, [deliveryId, chatEnabled, isOpen]);
 
   useEffect(() => {
     if (!chatEnabled) {
@@ -87,53 +51,21 @@ export default function TrackingChat({ deliveryId, status }) {
 
     const message = messageText.trim();
 
-    if (!message || !chatEnabled || !supabase || !deliveryId || loading) {
+    if (!message || !chatEnabled || !deliveryId || loading) {
       return;
     }
 
     try {
       setLoading(true);
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        console.error("Could not get logged-in customer:", userError);
-
-        alert("Your login session could not be verified.");
-        return;
-      }
-
-      if (!user) {
-        alert("Please log in again before sending a message.");
-        return;
-      }
-
-
-      const { error } = await supabase.from("delivery_messages").insert({
-        delivery_id: deliveryId,
-        sender_id: user.id,
-        sender_type: "customer",
-        message,
-      });
-
-      if (error) {
-        console.error("Could not send customer message:", error);
-
-        alert(`Could not send your message: ${error.message}`);
-
-        return;
-      }
-
+      const { message: savedMessage } = await customerApiRequest(
+        `/api/deliveries/${encodeURIComponent(deliveryId)}/messages`,
+        { method: "POST", body: JSON.stringify({ message }) }
+      );
+      setMessages((previous) => [...previous, savedMessage]);
       setMessageText("");
     } catch (error) {
       console.error("Customer chat error:", error);
-
-      alert(
-        `Could not send your message: ${error?.message || "Unknown error"}`
-      );
+      alert(`Could not send your message: ${error?.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }

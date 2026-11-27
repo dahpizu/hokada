@@ -23,6 +23,7 @@ function formatAddress(feature) {
 }
 
 export default function GoogleAddressInput({
+  id,
   value,
   placeholder,
   onChange,
@@ -140,6 +141,7 @@ export default function GoogleAddressInput({
       style={{ flex: 1, minWidth: 0, position: "relative" }}
     >
       <input
+        id={id}
         className="google-address-input"
         type="text"
         autoComplete="off"

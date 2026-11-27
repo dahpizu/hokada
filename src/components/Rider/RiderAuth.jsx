@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import {
   Bike,
   Lock,
@@ -9,10 +10,22 @@ import {
   EyeOff,
   ArrowLeft,
 } from "lucide-react";
-import { supabase } from "../../lib/supabase";
+import { riderSupabase as supabase } from "../../lib/supabase";
+import { riderApiRequest } from "../../lib/riderApi";
+
+async function ensureRiderProfile(user, fullName) {
+  if (!supabase || !user?.id) return;
+  await riderApiRequest("/api/rider/profile", {
+    method: "POST",
+    body: JSON.stringify({ fullName: fullName || user.user_metadata?.full_name }),
+  });
+}
 
 export default function RiderAuth({ onLogin }) {
   const [mode, setMode] = useState("login");
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const turnstileRef = useRef(null);
+  const [captchaToken, setCaptchaToken] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,27 +34,60 @@ export default function RiderAuth({ onLogin }) {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
+    setError("");
+    setMessage("");
+    setPassword("");
+    setCaptchaToken("");
+    turnstileRef.current?.reset();
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    setLoading(true);
     setError("");
     setMessage("");
 
     if (!supabase) {
       setError("Supabase is not configured.");
-      setLoading(false);
       return;
     }
 
+    if (!turnstileSiteKey) {
+      setError("Security verification is not configured. Please try again later.");
+      return;
+    }
+
+    if (!captchaToken) {
+      setError("Please complete the security verification.");
+      return;
+    }
+
+    if (mode === "signup") {
+      if (!name.trim()) {
+        setError("Please enter your full name.");
+        return;
+      }
+
+      const validPassword =
+        password.length >= 12 &&
+        /[a-z]/.test(password) &&
+        /[A-Z]/.test(password) &&
+        /[0-9]/.test(password) &&
+        /[^A-Za-z0-9]/.test(password);
+
+      if (!validPassword) {
+        setError(
+          "Use at least 12 characters, including uppercase and lowercase letters, a number and a symbol."
+        );
+        return;
+      }
+    }
+
+    setLoading(true);
+
     try {
       if (mode === "signup") {
-        if (!name.trim()) {
-          setError("Please enter your full name.");
-          setLoading(false);
-          return;
-        }
-
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -50,6 +96,7 @@ export default function RiderAuth({ onLogin }) {
               full_name: name.trim(),
               role: "rider",
             },
+            captchaToken,
           },
         });
 
@@ -57,24 +104,8 @@ export default function RiderAuth({ onLogin }) {
           throw signUpError;
         }
 
-        if (data.user) {
-          const { error: profileError } = await supabase
-            .from("rider_profiles")
-            .upsert({
-              id: data.user.id,
-              full_name: name.trim(),
-              rating: 5.0,
-              total_deliveries: 0,
-              total_earnings: 0,
-              is_online: false,
-            });
-
-          if (profileError) {
-            throw profileError;
-          }
-        }
-
         if (data.session) {
+          await ensureRiderProfile(data.user, name.trim());
           onLogin(data.user);
         } else {
           setMessage(
@@ -86,18 +117,22 @@ export default function RiderAuth({ onLogin }) {
           await supabase.auth.signInWithPassword({
             email: email.trim(),
             password,
+            options: { captchaToken },
           });
 
         if (loginError) {
           throw loginError;
         }
 
+        await ensureRiderProfile(data.user);
         onLogin(data.user);
       }
     } catch (authError) {
       setError(authError.message || "Something went wrong.");
     } finally {
       setLoading(false);
+      setCaptchaToken("");
+      turnstileRef.current?.reset();
     }
   };
 
@@ -115,6 +150,16 @@ export default function RiderAuth({ onLogin }) {
       return;
     }
 
+    if (!turnstileSiteKey) {
+      setError("Security verification is not configured. Please try again later.");
+      return;
+    }
+
+    if (!captchaToken) {
+      setError("Please complete the security verification first.");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -124,6 +169,7 @@ export default function RiderAuth({ onLogin }) {
         email.trim(),
         {
           redirectTo: redirectUrl,
+          captchaToken,
         }
       );
 
@@ -140,6 +186,8 @@ export default function RiderAuth({ onLogin }) {
       );
     } finally {
       setLoading(false);
+      setCaptchaToken("");
+      turnstileRef.current?.reset();
     }
   };
 
@@ -225,7 +273,7 @@ export default function RiderAuth({ onLogin }) {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                minLength={6}
+                minLength={mode === "signup" ? 12 : undefined}
                 required
               />
 
@@ -240,10 +288,26 @@ export default function RiderAuth({ onLogin }) {
             </div>
           </div>
 
+          {turnstileSiteKey ? (
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={turnstileSiteKey}
+              onSuccess={setCaptchaToken}
+              onExpire={() => setCaptchaToken("")}
+              onError={(errorCode) => {
+                setCaptchaToken("");
+                console.error("Turnstile widget failed:", errorCode);
+                setError(
+                  `Security verification failed${errorCode ? ` (${errorCode})` : ""}. Please try again.`
+                );
+              }}
+            />
+          ) : null}
+
           <button
             type="submit"
             className="rider-auth-submit"
-            disabled={loading}
+            disabled={loading || !turnstileSiteKey || !captchaToken}
           >
             {loading
               ? "Please wait..."
@@ -262,12 +326,7 @@ export default function RiderAuth({ onLogin }) {
 
               <button
                 type="button"
-                onClick={() => {
-                  setMode("signup");
-                  setError("");
-                  setMessage("");
-                  setPassword("");
-                }}
+                onClick={() => switchMode("signup")}
               >
                 Create account
               </button>
@@ -278,12 +337,7 @@ export default function RiderAuth({ onLogin }) {
 
               <button
                 type="button"
-                onClick={() => {
-                  setMode("login");
-                  setError("");
-                  setMessage("");
-                  setPassword("");
-                }}
+                onClick={() => switchMode("login")}
               >
                 Sign in
               </button>

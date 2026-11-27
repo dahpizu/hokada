@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { riderSupabase as supabase } from "../lib/supabase";
+import { riderApiRequest } from "../lib/riderApi";
 import { Radio, ShieldCheck, Wifi, WifiOff } from "lucide-react";
 
 export default function RiderLocationBroadcaster({
@@ -8,6 +9,7 @@ export default function RiderLocationBroadcaster({
   enabled = true,
 }) {
   const watchIdRef = useRef(null);
+  const lastSentAtRef = useRef(0);
 
   const [status, setStatus] = useState("waiting");
   const [lastLocation, setLastLocation] = useState(null);
@@ -35,40 +37,37 @@ export default function RiderLocationBroadcaster({
     let active = true;
 
     const updateRiderLocation = async (location) => {
-      const { error: updateError } = await supabase
-        .from("deliveries")
-        .update({
-          rider_lat: location.lat,
-          rider_lng: location.lng,
-          rider_heading: location.heading,
-          rider_speed: location.speed,
-          rider_accuracy: location.accuracy,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", deliveryId)
-        .eq("rider_id", riderId);
+      if (!active) return;
 
-      if (updateError) {
+      try {
+        await riderApiRequest(
+          `/api/rider/deliveries/${encodeURIComponent(deliveryId)}/location`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              latitude: location.lat,
+              longitude: location.lng,
+              heading: location.heading,
+              speed: location.speed,
+              accuracy: location.accuracy,
+            }),
+          }
+        );
+
+        if (!active) return;
+        setStatus("connected");
+        setError("");
+      } catch (updateError) {
+        if (!active) return;
         console.error("Rider location update error:", updateError);
+        setStatus("error");
         setError(updateError.message);
-        return;
       }
-
-      console.log("HOKADA GPS saved:", location);
-
     };
 
     const startTracking = async () => {
-      console.log("========== HOKADA GPS START ==========");
-      console.log("Delivery ID:", deliveryId);
-      console.log("GPS enabled:", enabled);
-      console.log("Browser geolocation available:", !!navigator.geolocation);
-      console.log("=======================================");
-
       setStatus("connecting");
       setError("");
-
-      console.log("Starting browser GPS watch...");
 
       watchIdRef.current = navigator.geolocation.watchPosition(
         async (position) => {
@@ -85,10 +84,10 @@ export default function RiderLocationBroadcaster({
             timestamp: new Date().toISOString(),
           };
 
-          console.log("HOKADA GPS position received:", location);
-
           setLastLocation(location);
-          setStatus("connected");
+          if (Date.now() - lastSentAtRef.current < 10000) return;
+          lastSentAtRef.current = Date.now();
+          setStatus("connecting");
           setError("");
 
           await updateRiderLocation(location);
@@ -119,8 +118,6 @@ export default function RiderLocationBroadcaster({
 
     return () => {
       active = false;
-
-      console.log("HOKADA GPS cleanup:", deliveryId);
 
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
