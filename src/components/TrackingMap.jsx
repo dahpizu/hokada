@@ -90,6 +90,7 @@ export default function TrackingMap({
   dropoff: dropoffInput,
   riderName = "HOKADA rider",
   status = "searching",
+  paymentStatus,
 }) {
   const pickup = useMemo(() => validPoint(pickupInput), [pickupInput]);
   const dropoff = useMemo(() => validPoint(dropoffInput), [dropoffInput]);
@@ -98,7 +99,8 @@ export default function TrackingMap({
   const [lastUpdate, setLastUpdate] = useState(null);
   const [gpsError, setGpsError] = useState("");
 
-  const trackingEnded = ["delivered", "cancelled"].includes(status);
+  const deliveryCompleted = status === "delivered" || paymentStatus === "paid";
+  const trackingEnded = deliveryCompleted || status === "cancelled";
 
   useEffect(() => {
     if (!supabase || !deliveryId || trackingEnded) {
@@ -218,7 +220,7 @@ export default function TrackingMap({
             <strong>{trackingEnded ? "Rider tracking ended" : gpsIsRecent ? "Live rider tracking" : "Rider tracking"}</strong>
             <span>
               {trackingEnded
-                ? status === "delivered"
+                ? deliveryCompleted
                   ? "Delivery completed. Rider location is no longer available."
                   : "Delivery cancelled. Rider location is no longer available."
                 : gpsIsRecent
@@ -242,7 +244,9 @@ export default function TrackingMap({
           <span>{isDropoffStage ? "DROP-OFF STAGE" : "PICKUP STAGE"}</span>
           <strong>
             {isDropoffStage
-              ? "Rider is heading to drop-off"
+              ? ["arrived_at_dropoff", "delivered"].includes(status)
+                ? "Rider has arrived at drop-off"
+                : "Rider is heading to drop-off"
               : "Rider is heading to pickup"}
           </strong>
         </div>

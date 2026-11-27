@@ -4,13 +4,14 @@ import { customerApiRequest } from "../lib/customerApi";
 
 const CHAT_ENABLED_STATUSES = ["arrived", "collected", "arrived_at_dropoff"];
 
-export default function TrackingChat({ deliveryId, status }) {
+export default function TrackingChat({ deliveryId, status, paymentStatus }) {
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const chatEnabled = CHAT_ENABLED_STATUSES.includes(status);
+  const chatEnabled =
+    CHAT_ENABLED_STATUSES.includes(status) && paymentStatus !== "paid";
 
   useEffect(() => {
     if (!deliveryId || !chatEnabled || !isOpen) {

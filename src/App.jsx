@@ -1888,6 +1888,7 @@ function TrackingPage({
             }}
             riderName={rider?.name || booking?.riderName || delivery.rider_name || "HOKADA rider"}
             status={status}
+            paymentStatus={delivery.payment_status}
           />
           </Suspense>
         )}
@@ -2097,7 +2098,11 @@ function TrackingPage({
           )}
         </div>
 
-        <TrackingChat deliveryId={delivery?.id} status={status} />
+        <TrackingChat
+          deliveryId={delivery?.id}
+          status={status}
+          paymentStatus={delivery?.payment_status}
+        />
 
         <div className="tracking-actions">
           <button className="primary-button" onClick={onViewDeliveries}>

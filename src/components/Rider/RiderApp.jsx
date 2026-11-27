@@ -298,6 +298,13 @@ export default function RiderApp() {
 
       setActiveDelivery(null);
 
+      if (activeDeliveryRef.current?.id) {
+        void Promise.all([
+          loadDeliveryHistory(currentRiderId),
+          loadTodayStats(currentRiderId),
+        ]);
+      }
+
       if (showLoading) setLoading(false);
     } catch (error) {
       console.error("Load delivery error:", error);

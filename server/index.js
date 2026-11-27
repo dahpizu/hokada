@@ -288,7 +288,7 @@ async function verifyAndRecordPayment(reference) {
   const { data: delivery, error } = await supabase
     .from("deliveries")
     .select(
-      "id, customer_id, payment_status, payment_provider, payment_reference, payment_amount_kobo, paid_at"
+      "id, customer_id, status, payment_status, payment_provider, payment_reference, payment_amount_kobo, paid_at"
     )
     .eq("payment_reference", reference)
     .maybeSingle();
@@ -353,26 +353,64 @@ async function verifyAndRecordPayment(reference) {
     };
   }
 
+  if (!["arrived_at_dropoff", "delivered"].includes(delivery.status)) {
+    return {
+      verified: false,
+      status: "unverified",
+      message: "Payment cannot be completed because the delivery is not at drop-off.",
+    };
+  }
+
   // Repeated callbacks/webhooks must not reset the original paid timestamp.
   if (
     delivery.payment_status === "paid" &&
     delivery.payment_reference === reference
   ) {
-    return { verified: true, delivery };
+    if (delivery.status === "delivered") return { verified: true, delivery };
+
+    const { data: completed, error: completionError } = await supabase
+      .from("deliveries")
+      .update({ status: "delivered", updated_at: new Date().toISOString() })
+      .eq("id", delivery.id)
+      .eq("payment_status", "paid")
+      .eq("payment_reference", reference)
+      .eq("status", "arrived_at_dropoff")
+      .select("id, customer_id, status, payment_status, payment_reference, paid_at")
+      .maybeSingle();
+
+    if (completionError) throw completionError;
+    if (completed) return { verified: true, delivery: completed };
+
+    const { data: current, error: readError } = await supabase
+      .from("deliveries")
+      .select("id, customer_id, status, payment_status, payment_reference, paid_at")
+      .eq("id", delivery.id)
+      .maybeSingle();
+
+    if (readError) throw readError;
+    if (current?.payment_status === "paid" && current?.payment_reference === reference && current?.status === "delivered") {
+      return { verified: true, delivery: current };
+    }
+
+    return { verified: false, message: "Could not complete the paid delivery." };
   }
 
+  const paidAt = new Date().toISOString();
   const { data: updated, error: updateError } = await supabase
     .from("deliveries")
     .update({
       payment_status: "paid",
       payment_provider: "paystack",
-      paid_at: new Date().toISOString(),
+      paid_at: paidAt,
+      status: "delivered",
+      updated_at: paidAt,
     })
     .eq("id", delivery.id)
     .eq("payment_reference", reference)
     .eq("payment_amount_kobo", expectedAmountKobo)
     .in("payment_status", ["unpaid", "pending"])
-    .select("id, customer_id, payment_status, payment_reference, paid_at")
+    .in("status", ["arrived_at_dropoff", "delivered"])
+    .select("id, customer_id, status, payment_status, payment_reference, paid_at")
     .maybeSingle();
 
   if (updateError) throw updateError;
@@ -384,7 +422,7 @@ async function verifyAndRecordPayment(reference) {
   // Another callback/webhook may have recorded this payment concurrently.
   const { data: current, error: readError } = await supabase
     .from("deliveries")
-    .select("id, customer_id, payment_status, payment_reference, paid_at")
+    .select("id, customer_id, status, payment_status, payment_reference, paid_at")
     .eq("id", delivery.id)
     .maybeSingle();
 
@@ -392,7 +430,8 @@ async function verifyAndRecordPayment(reference) {
 
   if (
     current?.payment_status === "paid" &&
-    current?.payment_reference === reference
+    current?.payment_reference === reference &&
+    current?.status === "delivered"
   ) {
     return { verified: true, delivery: current };
   }
@@ -858,13 +897,20 @@ app.post("/api/rider/deliveries/:deliveryId/status", requireRider, async (req, r
   try {
     const { data: current, error: readError } = await supabase
       .from("deliveries")
-      .select("id, rider_id, status, payment_status")
+      .select(DELIVERY_SELECT)
       .eq("id", req.params.deliveryId)
       .eq("rider_id", req.rider.id)
       .maybeSingle();
 
     if (readError) throw readError;
     if (!current) return res.status(404).json({ error: "Assigned delivery not found." });
+    if (
+      nextStatus === "delivered" &&
+      current.status === "delivered" &&
+      current.payment_status === "paid"
+    ) {
+      return res.json({ delivery: current });
+    }
     if (current.status !== expectedStatus) {
       return res.status(409).json({ error: "The delivery has changed. Refresh and try again." });
     }
