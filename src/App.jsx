@@ -28,7 +28,6 @@ import {
   XCircle,
 } from "lucide-react";
 
-import "./App.css";
 
 const TrackingMap = lazy(() => import("./components/TrackingMap"));
 
