@@ -109,6 +109,8 @@ function formatNaira(amount) {
 }
 
 function mapDeliveryHistory(delivery) {
+  const paymentIsPaid = delivery.payment_status === "paid";
+
   return {
     id: delivery.id,
     pickup: delivery.pickup_address,
@@ -118,7 +120,7 @@ function mapDeliveryHistory(delivery) {
     recipientName: delivery.recipient_name,
     recipientPhone: delivery.recipient_phone,
     notes: delivery.notes || "",
-    status: delivery.status,
+    status: paymentIsPaid ? "delivered" : delivery.status,
     deliveryFee: delivery.delivery_fee,
     paymentStatus: delivery.payment_status,
     pricing: {
@@ -1700,19 +1702,20 @@ function TrackingPage({
 }) {
   const delivery = booking?.delivery || booking;
   const status = delivery?.status;
-  const paymentIsPaid = delivery?.payment_status === "paid";
+  const paymentStatus = delivery?.payment_status ?? delivery?.paymentStatus;
+  const paymentIsPaid = paymentStatus === "paid";
   // Payment confirmation completes the customer-facing delivery even if a
   // delayed realtime status update still says arrived_at_dropoff.
   const isDelivered = status === "delivered" || paymentIsPaid;
   const riderAtDestination = ["arrived_at_dropoff", "delivered"].includes(status);
-  const paymentIsPending = delivery?.payment_status === "pending";
+  const paymentIsPending = paymentStatus === "pending";
   const deliveryFee = Number(delivery?.delivery_fee);
   const hasPayableDeliveryFee = Number.isFinite(deliveryFee) && deliveryFee >= 1;
   const isMatchingRider = ["searching", "pending"].includes(status) && !rider;
   const liveTrackingActive = !riderAtDestination && !paymentIsPaid;
   const paymentIsAvailable =
     PAYMENT_ELIGIBLE_STATUSES.includes(status) &&
-    delivery?.payment_status === "unpaid" &&
+    paymentStatus === "unpaid" &&
     !paymentIsPaid &&
     hasPayableDeliveryFee;
 
@@ -1754,7 +1757,7 @@ function TrackingPage({
       title: "Delivery reached drop-off",
       description: paymentIsPending
         ? "Your delivery is at the destination. We’re confirming the payment status."
-        : hasPayableDeliveryFee && delivery?.payment_status === "unpaid"
+        : hasPayableDeliveryFee && paymentStatus === "unpaid"
           ? "Your rider has reached the delivery location. You can now pay your delivery fee."
           : "Your rider has reached the destination. The final delivery status is being confirmed.",
       icon: <Flag size={22} />,
@@ -2261,7 +2264,9 @@ function DeliveriesPage({ deliveries, onBack, onBook, onSelectDelivery }) {
 }
 
 function DeliveryDetailsPage({ delivery, onBack, onTrack, onPay, isPaying }) {
-  const status = String(delivery.status || "searching")
+  const paymentStatus = delivery.paymentStatus ?? delivery.payment_status;
+  const deliveryStatus = paymentStatus === "paid" ? "delivered" : delivery.status;
+  const status = String(deliveryStatus || "searching")
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
@@ -2304,15 +2309,14 @@ function DeliveryDetailsPage({ delivery, onBack, onTrack, onPay, isPaying }) {
         <p>
           <strong>Payment:</strong>{" "}
           {(
-            delivery.paymentStatus ||
-            delivery.payment_status ||
+            paymentStatus ||
             "Not confirmed"
           )
             .toString()
             .replaceAll("_", " ")}
         </p>
 
-        {(delivery.paymentStatus || delivery.payment_status) !== "paid" &&
+        {paymentStatus !== "paid" &&
           ["arrived_at_dropoff", "delivered"].includes(delivery.status) && (
             <button
               className="primary-button full-width"
